@@ -1,0 +1,34 @@
+---
+import { Slot } from '@astro/types'; // Make sure this is correctly imported
+import { useState } from 'react'; // Optional: For any reactive behavior
+import '/public/css/global.css';
+import Navbar from '../components/Navbar/Navbar'; // Adjust the path if necessary
+
+
+---
+
+    <!DOCTYPE html>
+<html lang="en">
+    <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <title>My Website</title>
+</head>
+<body>
+<!-- Header Section -->
+<header class="header">
+    <Navbar /> <!-- This will render your Navbar component here -->
+</header>
+
+<!-- Main Content (Where the page-specific content will go) -->
+<main class="main-content">
+    <slot /> <!-- This is where child components or pages are inserted -->
+</main>
+
+<!-- Footer Section -->
+<footer class="footer">
+    <p>&copy; {new Date().getFullYear()} My Website. All Rights Reserved.</p>
+</footer>
+</body>
+</html>
