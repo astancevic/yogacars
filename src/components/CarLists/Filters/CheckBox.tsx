@@ -1,6 +1,6 @@
-import { StylableProp } from '@/util/StylableProps';
+import type {StylableProp} from '@/util/StylableProps';
 import React, { useEffect, useState } from 'react';
-import { ChecklistItem } from './ChecklistFilter';
+import type {ChecklistItem} from './ChecklistFilter';
 
 interface ChecklistItemProps extends ChecklistItem {
   labelClass?: string;

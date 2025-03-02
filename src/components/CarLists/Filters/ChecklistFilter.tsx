@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import FilterWrapper, { FilterWrapperProps } from './FilterWrapper';
+import FilterWrapper, {type FilterWrapperProps } from './FilterWrapper';
 import Checkbox from './CheckBox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from 'components/ui/scroll-area.tsx';
 
 export interface ChecklistItem {
   label: string;

@@ -42,7 +42,6 @@ export default function CarsListBlock({
       ) : (
         <>
           {vehicleList.map((vehicle, index) => {
-            console.log(vehicle.image_url.split(",")[0])
             return (
               <div key={index} className="w-full">
                   <>

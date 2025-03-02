@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as SliderPrimitive from '@radix-ui/react-slider';
 
 import { cn } from '@/lib/utils';
-import { ValueFormat, formatValue } from '../CarLists/Filters/RangeFilter';
+import {type ValueFormat, formatValue } from '../CarLists/Filters/RangeFilter';
 
 interface SliderProps extends React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> {
   format: ValueFormat;

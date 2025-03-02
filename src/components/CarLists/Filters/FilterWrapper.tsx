@@ -1,5 +1,5 @@
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
-import React, { PropsWithChildren, useState } from 'react';
+import React, {type PropsWithChildren, useState } from 'react';
 
 export interface FilterWrapperProps {
   title: string;

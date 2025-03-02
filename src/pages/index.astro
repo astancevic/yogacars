@@ -6,10 +6,9 @@ import { useState } from 'react';
 import DefaultLayout from '../layouts/DefaultLayout.astro';
 
 // Fetch data server-side during build or SSR
-const vehicles = await getVehicles();
-// console.log(vehicles);
-
-// You can aggregate counts if needed here
+const response = await getVehicles();
+const vehicles = response?.vehicles || []; // Ensure vehicles is always an array// console.log(vehicles);
+const count = response?.count || 0; // Ensure count is a number, fallback to 0
 // const aggregateVehicle = { _count: { _all: vehicles.length } };
 
 const BATCH_SIZE = 24;
@@ -19,6 +18,6 @@ const BATCH_SIZE = 24;
 	<div>
 		<Branding logosClassName="fill-black" />
 		<CarPage
-			initialData={{ vehicles }}		/>
+			initialData={{ vehicles, count }}		/>
 	</div>
 </DefaultLayout>

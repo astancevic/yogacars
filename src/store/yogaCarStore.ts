@@ -14,6 +14,7 @@ import {
 import { create } from 'zustand';
 import type {YogaCarStore} from './yogaCarStoreTypes';
 import {navigate} from "astro:transitions/client";
+import {string} from "zod";
 
 export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
   selectedView: 'grid',
@@ -30,7 +31,6 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
   setSelectedFiltersState: (newState) => {
     set(() => ({ selectedFiltersState: { ...newState } }));
   },
-
   priceRange: undefined,
   setPriceRange(newPriceRange) {
     set(() => ({ priceRange: newPriceRange }));
@@ -125,6 +125,14 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
   setApplyingFilter(newApplyingFilter) {
     set(() => ({ applyingFilter: newApplyingFilter }));
   },
+
+  contextMake: '*',
+  setContextMake: (newContextMake) => set({ contextMake: newContextMake }),
+  contextModel: '*',
+  setContextModel: (newContextModel) => set({ contextModel: newContextModel }),
+  contextBodyType: '*',
+  setContextBodyType: (newContextBodyType) => set({ contextBodyType: newContextBodyType }),
+
 
   removeItem(key, valueToRemove, range) {},
 
@@ -538,7 +546,7 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
       take: take ?? 24,
       skip: skip ?? 0
     };
-
+console.log(1111);
     if (get().selectedFiltersState) state = get().selectedFiltersState;
     sortOption = get().selectedSortOption;
 

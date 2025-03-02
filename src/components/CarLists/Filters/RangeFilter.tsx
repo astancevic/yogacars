@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { formatCurrency, formatNumber } from '../formatCurrency';
-import FilterWrapper, { FilterWrapperProps } from './FilterWrapper';
+import FilterWrapper, {type FilterWrapperProps } from './FilterWrapper';
 import InputField from './InputField';
 import { Slider } from '@/components/ui/slider';
 

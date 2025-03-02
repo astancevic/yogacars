@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import ChecklistFilter from '../CarLists/Filters/ChecklistFilter';
 import RangeFilter from '../CarLists/Filters/RangeFilter';
 import { useYogaCarStore } from '../../store/yogaCarStore';
-import TrimFilter from '../CarLists/Filters/TrimFilter';
+// import TrimFilter from '../CarLists/Filters/TrimFilter';
 import type {BaseSelectOption} from '../FormControls/Dropdown';
 import ConditionFilter from '../CarLists/Filters/ConditionFilter';
 import ModelFilter from '../CarLists/Filters/ModelFilter';
@@ -58,7 +58,7 @@ export interface FilterState {
 
 function SideBarFilters(props: SideBarFiltersProps) {
   const selectedFiltersState = useYogaCarStore((state) => state.selectedFiltersState);
-
+console.log(selectedFiltersState);
   const priceRange = useYogaCarStore((state) => state.priceRange);
   const priceRangeValue = useYogaCarStore((state) => state.priceRangeValue);
   const setPriceRangeValue = useYogaCarStore((state) => state.setPriceRangeValue);
@@ -88,7 +88,7 @@ function SideBarFilters(props: SideBarFiltersProps) {
   const setInteriorColorList = useYogaCarStore((state) => state.setInteriorColorList);
   const typeList = useYogaCarStore((state) => state.typeList);
   const setTypeList = useYogaCarStore((state) => state.setTypeList);
-
+  console.log()
   // FILTER HANDLERS
   const updateOnChange = (state: FilterState) => {
     props.onFilterChange(state);
@@ -274,6 +274,7 @@ function SideBarFilters(props: SideBarFiltersProps) {
 
     updateOnChange(newState);
   };
+  console.log(priceRangeValue)
 
   return (
     <div
@@ -293,7 +294,6 @@ function SideBarFilters(props: SideBarFiltersProps) {
         onChange={handTypeSelection}
         showItem={true}
       /> */}
-
       <RangeFilter
         className="border-y border-t-0 border-black/30  "
         isExpanded={true}
@@ -373,17 +373,17 @@ function SideBarFilters(props: SideBarFiltersProps) {
       />
 
       {/* {props.showTrim && ( */}
-      <TrimFilter
-        className="border-y border-t-0 border-black/30 "
-        title="Trim"
-        items={trimList!}
-        setItems={setTrimList}
-        onChange={handleTrimSelection}
-        showItem={true}
-        contextModel={props.contextModel}
-        // message="Please select a Model"
-        // showItem={selectedFiltersState?.model?.length! > 0 ? true : false}
-      />
+      {/*<TrimFilter*/}
+      {/*  className="border-y border-t-0 border-black/30 "*/}
+      {/*  title="Trim"*/}
+      {/*  items={trimList!}*/}
+      {/*  setItems={setTrimList}*/}
+      {/*  onChange={handleTrimSelection}*/}
+      {/*  showItem={true}*/}
+      {/*  contextModel={props.contextModel}*/}
+      {/*  // message="Please select a Model"*/}
+      {/*  // showItem={selectedFiltersState?.model?.length! > 0 ? true : false}*/}
+      {/*/>*/}
       {/* )} */}
 
       <ChecklistFilter

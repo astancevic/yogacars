@@ -70,6 +70,13 @@ export interface YogaCarStore {
   applyingFilter: FilterGraphQueryVariables | undefined;
   setApplyingFilter: (newApplyingFilter: FilterGraphQueryVariables | undefined) => void;
 
+  contextMake: string;
+  setContextMake: (newContextMake: string) => void;
+  contextModel: string;
+  setContextModel: (newContextModel: string) => void;
+  contextBodyType: string;
+  setContextBodyType: (newContextBodyType: string) => void;
+
   removeItem: (key: filterKeys, valueToRemove: string, range?: 'min' | 'max') => void;
   readParam: (
     searchParam: URLSearchParams,
@@ -77,7 +84,7 @@ export interface YogaCarStore {
     contextMake: string | undefined,
     contextModel: string | undefined,
     contextBodyType: string | undefined,
-    queryResult: Queries.InitialCarsListAndFiltersDataQuery,
+    queryResult: any,
     handleFilterStateChange: (
       state?: FilterState | undefined,
       take?: number | undefined,
@@ -103,12 +110,12 @@ export interface YogaCarStore {
   ) => void;
 
   handleFilterStateChangeAction: (
-    contextMake: string | undefined,
-    contextModel: string | undefined,
-    queryResult: Queries.InitialCarsListAndFiltersDataQuery,
-    state?: FilterState | undefined,
-    take?: number | undefined,
-    skip?: number | undefined,
-    sortOption?: BaseSelectOption<string> | undefined
+      contextMake: string | undefined,
+      contextModel: string| undefined,
+      queryResult: any,
+      state?: FilterState | undefined,
+      take?: number | undefined,
+      skip?: number | undefined,
+      sortOption?: BaseSelectOption<string> | undefined
   ) => void;
 }
