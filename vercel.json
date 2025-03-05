@@ -1,7 +1,7 @@
 {
   "functions": {
     "_render": {
-      "runtime": "18.x"
+      "runtime": "20.x"
     }
   },
   "builds": [
