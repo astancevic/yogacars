@@ -3,6 +3,7 @@ import sqlite3 from 'sqlite3';
 import nodePath from 'node:path';
 export { renderers } from '../../renderers.mjs';
 
+const prerender = false;
 async function POST({ request }) {
   try {
     const db = await open({
@@ -32,7 +33,8 @@ async function POST({ request }) {
 
 const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
     __proto__: null,
-    POST
+    POST,
+    prerender
 }, Symbol.toStringTag, { value: 'Module' }));
 
 const page = () => _page;
