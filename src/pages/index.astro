@@ -3,7 +3,9 @@ import Branding from '../components/Home/Branding';
 import CarPage from '../components/Car/CarPage';
 import DefaultLayout from '../layouts/DefaultLayout.astro';
 
-const apiUrl = import.meta.env.API_URL;
+const apiUrl = process.env.VERCEL_URL
+	? `https://${process.env.VERCEL_URL}/api/vehicles`
+	: import.meta.env.API_URL; // Fallback to local if not deployed
 // 🚀 Fetch data server-side
 const vehicleResponse = await fetch(apiUrl + 'vehicles'); // Adjust API URL as needed
 const { vehicles, count } = await vehicleResponse.json();
