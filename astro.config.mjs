@@ -11,5 +11,8 @@ export default defineConfig({
     integrations: [react()],
     adapter: vercel(),
     output: 'server',
+    build: {
+        out: './dist',
+    },
 
 });

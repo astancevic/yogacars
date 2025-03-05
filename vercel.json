@@ -3,5 +3,11 @@
     "_render": {
       "runtime": "18.x"
     }
-  }
+  },
+  "builds": [
+    {
+      "src": "src/index.ts",
+      "use": "@vercel/node"
+    }
+  ]
 }
