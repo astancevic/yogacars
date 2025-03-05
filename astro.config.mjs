@@ -12,7 +12,7 @@ export default defineConfig({
     adapter: vercel(),
     output: 'server',
     build: {
-        out: './dist',
+        out: 'dist',
     },
 
 });
