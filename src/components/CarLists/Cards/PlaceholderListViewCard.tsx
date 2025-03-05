@@ -1,5 +1,5 @@
 import React from 'react';
-import { StylableProp } from '../../../util/StylableProps';
+import type {StylableProp} from '../../../util/StylableProps';
 
 export default function PlaceholderListViewCard() {
   return (

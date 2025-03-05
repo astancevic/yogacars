@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from "node:path";
+import type {FilterState} from "@/components/Car/SideBarFilters.tsx";
 
 const dbPath = path.resolve('data', 'vehicles.db');
 const db = await open({
@@ -96,4 +97,69 @@ export const fetchDistinctTrims = async () => {
     // Execute query asynchronously
     const result = await db.all(query);
     return result;
+};
+
+export const fetchDistinctFilters = async (): Promise<FilterState> => {
+    try {
+        // Fetch distinct values from `vehicles`, joining pricing for price
+        const query = `
+            SELECT DISTINCT v.body AS bodyType,
+                            v.manufacturer_id, 
+                            v.model_id, 
+                            v.drivetrain, 
+                            v.dealerCity, 
+                            v.fuel_type,
+                            v.mileage,
+                            v.year,
+                            p.msrp AS price
+            FROM vehicles v
+            JOIN pricing p ON v.pricing_id = p.id
+        `;
+
+        const result = await db.all(query);
+
+        // Fetch distinct models
+        const modelsQuery = `
+            SELECT DISTINCT id, name, manufacturer_id 
+            FROM models
+            WHERE id IN (SELECT DISTINCT model_id FROM vehicles)
+        `;
+
+        // Fetch distinct manufacturers
+        const makeQuery = `
+            SELECT DISTINCT name 
+            FROM manufacturers
+            WHERE id IN (SELECT DISTINCT manufacturer_id FROM vehicles)
+        `;
+
+        // Execute queries
+        const models = await db.all(modelsQuery);
+        const make = await db.all(makeQuery);
+
+        // Extract min and max values for price, miles, and year
+        const prices = result.map((row: any) => row.price).filter(Boolean);
+        const miles = result.map((row: any) => row.mileage).filter(Boolean);
+        const years = result.map((row: any) => row.year).filter(Boolean);
+
+        return {
+            make: make.map((row: any) => row.name), // Array of strings
+            model: models.map((row: any) => ({ name: row.name, parent: row.manufacturer_id.toString() })), // Parent as string
+            location: [...new Set(result.map((row: any) => row.dealerCity))].filter(Boolean),
+            fuelType: [...new Set(result.map((row: any) => row.fuel_type))].filter(Boolean),
+            bodyType: [...new Set(result.map((row: any) => row.bodyType))].filter(Boolean),
+            drivetrain: [...new Set(result.map((row: any) => row.drivetrain))].filter(Boolean),
+            price: prices.length
+                ? { min: Math.min(...prices), max: Math.max(...prices) }
+                : undefined,
+            miles: miles.length
+                ? { min: Math.min(...miles), max: Math.max(...miles) }
+                : undefined,
+            year: years.length
+                ? { min: Math.min(...years), max: Math.max(...years) }
+                : undefined,
+        };
+    } catch (error) {
+        console.error("Error fetching distinct filters:", error);
+        throw error;
+    }
 };

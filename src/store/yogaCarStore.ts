@@ -427,6 +427,7 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
     sort,
     clearAll
   ) => {
+  console.log(111);
     // searchParam.forEach((value, key) => console.log(`${key}: ${value}`));
 
     // Create an array of keys

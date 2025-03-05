@@ -1,23 +1,23 @@
 ---
-import { getVehicles } from '../lib/vehicles';
 import Branding from '../components/Home/Branding';
 import CarPage from '../components/Car/CarPage';
-import { useState } from 'react';
 import DefaultLayout from '../layouts/DefaultLayout.astro';
+import { fetchDistinctFilters } from '@/lib/vehicles';
 
-// Fetch data server-side during build or SSR
-const response = await getVehicles();
-const vehicles = response?.vehicles || []; // Ensure vehicles is always an array// console.log(vehicles);
-const count = response?.count || 0; // Ensure count is a number, fallback to 0
-// const aggregateVehicle = { _count: { _all: vehicles.length } };
+// 🚀 Fetch data server-side
+const vehicleResponse = await fetch('http://localhost:4322/api/vehicles'); // Adjust API URL as needed
+const { vehicles, count } = await vehicleResponse.json();
+const filterResponse = await fetch('http://localhost:4322/api/fetchVehicleFilters');  // Fetch filters
+const {initialFilters} = await filterResponse.json(); // Fetch filters
 
 const BATCH_SIZE = 24;
 ---
 
 <DefaultLayout>
 	<div>
-		<Branding logosClassName="fill-black" />
-		<CarPage
-			initialData={{ vehicles, count }}		/>
+		<Branding logosClassName="fill-black" client:load />
+		<CarPage client:load
+				 initialData={{ vehicles, count }}
+				 initialFilters={initialFilters} />
 	</div>
 </DefaultLayout>

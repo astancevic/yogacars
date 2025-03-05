@@ -88,7 +88,7 @@ console.log(selectedFiltersState);
   const setInteriorColorList = useYogaCarStore((state) => state.setInteriorColorList);
   const typeList = useYogaCarStore((state) => state.typeList);
   const setTypeList = useYogaCarStore((state) => state.setTypeList);
-  console.log()
+  console.log('bodyTypeList')
   // FILTER HANDLERS
   const updateOnChange = (state: FilterState) => {
     props.onFilterChange(state);
@@ -386,23 +386,6 @@ console.log(selectedFiltersState);
       {/*/>*/}
       {/* )} */}
 
-      <ChecklistFilter
-        className="border-b border-black/30 "
-        title="Exterior Color"
-        items={exteriorColorList!}
-        setItems={setExteriorColorList}
-        onChange={handleExteriorColorSelection}
-        showItem={true}
-      />
-
-      <ChecklistFilter
-        className="border-b border-black/30 "
-        title="Interior Color"
-        items={interiorColorList!}
-        setItems={setInteriorColorList}
-        onChange={handleInteriorColorSelection}
-        showItem={true}
-      />
 
       <RangeFilter
         className="border-y border-t-0 border-black/30 "
