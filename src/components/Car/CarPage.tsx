@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import type { APIVehicle } from '../../lib/types';
+import type { APIVehicle } from '@/lib/types.ts';
 import CarsListBlock from './CarsListBlock';
 import { useYogaCarStore } from '@/store/yogaCarStore';
 import useDebounce from '../../lib/hooks/useDebounce.ts';

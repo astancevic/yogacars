@@ -1,5 +1,5 @@
 import React from 'react';
-import type { StylableProp } from '../../util/StylableProps';
+import type { StylableProp } from '@/util/StylableProps.ts';
 import { formatNumber, useFormatCurrency } from './formatCurrency';
 
 interface CarListCardProps {

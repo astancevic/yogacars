@@ -1,6 +1,6 @@
 import React from 'react';
 import PlaceholderBlock from '../CarLists/Cards/PlaceholderBlock';
-import type {APIVehicle} from '../../lib/types';
+import type {APIVehicle} from '@/lib/types.ts';
 import CarListCard from '../CarLists/CarListCard';
 
 interface CarsListBlockProps {

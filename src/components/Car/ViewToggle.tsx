@@ -1,4 +1,4 @@
-import { useYogaCarStore } from '../../store/yogaCarStore';
+import { useYogaCarStore } from '@/store/yogaCarStore.ts';
 import { LayoutGridIcon, Rows2Icon } from 'lucide-react';
 import React from 'react';
 

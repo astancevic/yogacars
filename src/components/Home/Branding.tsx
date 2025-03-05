@@ -1,5 +1,5 @@
 import React, { memo } from 'react';
-import { cn } from '../../lib/utils.ts';
+import { cn } from '@/lib/utils.ts';
 import useWindowSize from '../../lib/hooks/useWindowSize';
 
 interface BrandingProps {

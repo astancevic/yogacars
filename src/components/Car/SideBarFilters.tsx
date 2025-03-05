@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ChecklistFilter from '../CarLists/Filters/ChecklistFilter';
 import RangeFilter from '../CarLists/Filters/RangeFilter';
-import { useYogaCarStore } from '../../store/yogaCarStore';
+import { useYogaCarStore } from '@/store/yogaCarStore.ts';
 // import TrimFilter from '../CarLists/Filters/TrimFilter';
 import type {BaseSelectOption} from '../FormControls/Dropdown';
 import ConditionFilter from '../CarLists/Filters/ConditionFilter';
