@@ -18,6 +18,8 @@ interface CarPageProps {
 }
 
 export default function CarPage({ initialData, initialFilters }: CarPageProps) {
+    const apiUrl = import.meta.env.API_URL;
+
     const selectedSortOption = useYogaCarStore((state) => state.selectedSortOption);
     const setSelectedFiltersState = useYogaCarStore((state) => state.setSelectedFiltersState);
 
