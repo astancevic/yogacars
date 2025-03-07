@@ -40,7 +40,7 @@ const Branding = memo(({ className, logosClassName }: BrandingProps) => {
                         key={index}
                         className={`hidden cursor-pointer ${item.className}`}
                     >
-                        <img src={item.src} alt={item.name} className={cn(`hidden cursor-pointer ${item.className}`, logosClassName)}/>
+                        <img src={item.src} alt={item.name} className={cn(`hidden cursor-pointer ${item.className}`, logosClassName)} loading="lazy"/>
                     </a>
                 ))}
         </div>

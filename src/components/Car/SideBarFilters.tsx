@@ -248,9 +248,9 @@ function SideBarFilters(props: SideBarFiltersProps) {
         {bodyTypeList && bodyTypeList.length > 0 && (
             <ChecklistFilter
                 className="border-y border-t-0 border-black/30"
-                isExpanded={
-                    !!props.contextBodyType || (selectedFiltersState?.bodyType?.length ?? 0) > 0
-                }
+                // isExpanded={
+                //     !!props.contextBodyType || (selectedFiltersState?.bodyType?.length ?? 0) > 0
+                // }
                 title="Body Type"
                 items={bodyTypeList}
                 onChange={handleBodyTypeSelection}

@@ -285,7 +285,6 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
         },
         [searchParam, contextMake, contextModel, contextBodyType, initialFilters]
     );
-    {console.log(vehicles && vehicles?.length < totalCount)}
 
     // Set up filter state change handler
     const handleFilterStateChange = useCallback(
@@ -344,17 +343,7 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
                     vehicleList={vehicles}
                     isLoadMore={isLoadMore}
                 />
-                {vehicles && vehicles?.length < totalCount! && (
-                    <ShowMoreButton
-                        handleFilterStateChange={handleFilterStateChange}
-                        vehicleList={vehicles}
-                        contextMake={contextMake}
-                        contextModel={contextModel}
-                        bodyType={contextBodyType}
-                        setIsLoadMore={setIsLoadMore}
-                        isFetching={isLoading}
-                    />
-                )}
+
             </main>
         </div>
     );

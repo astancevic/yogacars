@@ -44,18 +44,20 @@ function CarListCard({
         <div className={`${aspectRatio} bg-gray-100 flex items-end justify-center`}>
           {heroImageUrl ? (
               <img
-                  className="object-cover w-full h-full"
                   src={heroImageUrl}
                   alt={`${year} ${make} ${model}`}
+                  className="w-full h-full object-cover"
+                  width={448}  // Ensure this matches your container's max width
+                  height={336} // Maintain the 4:3 aspect ratio
               />
           ) : (
               <div className="w-full h-full flex items-center justify-center bg-white">
-                <span className="text-gray-400">No Image</span>
+                  <span className="text-gray-400">No Image</span>
               </div>
           )}
         </div>
 
-        <div className="rounded-b-2xl bg-white p-4">
+          <div className="rounded-b-2xl bg-white p-4">
           <div className="flex items-center justify-between whitespace-nowrap text-xs text-pure-gray/65 2xl:text-sm">
             <span>{type}</span>
             <span>{formatNumber(miles ?? 0, 0)} mi</span>
