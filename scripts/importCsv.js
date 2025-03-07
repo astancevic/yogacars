@@ -1,173 +1,291 @@
-// import fs from "fs";
-// import sqlite3 from "sqlite3";
-// import { open } from "sqlite";
-// import csv from "csv-parser";
-//
-// const CSV_FILE = "../data/vehicles.csv";
-// const DB_FILE = "../data/vehicles.db";
-//
-// async function createDatabase() {
-//
-//     const db = await open({
-//         filename: DB_FILE,
-//         driver: sqlite3.Database,
-//     });
-//
-//     await db.exec(`
-//         CREATE TABLE IF NOT EXISTS manufacturers (
-//             id INTEGER PRIMARY KEY AUTOINCREMENT,
-//             name TEXT UNIQUE NOT NULL
-//         );
-//
-//         CREATE TABLE IF NOT EXISTS models (
-//             id INTEGER PRIMARY KEY AUTOINCREMENT,
-//             name TEXT NOT NULL,
-//             manufacturer_id INTEGER,
-//             FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id)
-//         );
-//
-//         CREATE TABLE IF NOT EXISTS trims (
-//             id INTEGER PRIMARY KEY AUTOINCREMENT,
-//             name TEXT NOT NULL,
-//             model_id INTEGER,
-//             FOREIGN KEY (model_id) REFERENCES models(id)
-//         );
-//
-//         CREATE TABLE IF NOT EXISTS pricing (
-//             id INTEGER PRIMARY KEY AUTOINCREMENT,
-//             msrp REAL,
-//             misc_price1 REAL,
-//             misc_price2 REAL,
-//             misc_price3 REAL
-//         );
-//
-//         CREATE TABLE IF NOT EXISTS vehicles (
-//             id INTEGER PRIMARY KEY AUTOINCREMENT,
-//             year INTEGER,
-//             body TEXT,
-//             type TEXT,
-//             drivetrain TEXT,
-//             dealerCity TEXT,
-//             dealerState TEXT,
-//             fuel_type TEXT,
-//             mileage INTEGER,
-//             image_url TEXT,
-//             manufacturer_id INTEGER,
-//             model_id INTEGER,
-//             trim_id INTEGER,
-//             pricing_id INTEGER,
-//             FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id),
-//             FOREIGN KEY (model_id) REFERENCES models(id),
-//             FOREIGN KEY (trim_id) REFERENCES trims(id),
-//             FOREIGN KEY (pricing_id) REFERENCES pricing(id)
-//         );
-//     `);
-//
-//     console.log("Database and tables created.");
-//
-//     // Prepared statements for inserting records
-//     const insertManufacturerStmt = await db.prepare(`
-//         INSERT OR IGNORE INTO manufacturers (name) VALUES (?)
-//     `);
-//     const insertModelStmt = await db.prepare(`
-//         INSERT OR IGNORE INTO models (name, manufacturer_id) VALUES (?, ?)
-//     `);
-//     const insertTrimStmt = await db.prepare(`
-//         INSERT OR IGNORE INTO trims (name, model_id) VALUES (?, ?)
-//     `);
-//     const insertPricingStmt = await db.prepare(`
-//         INSERT INTO pricing (msrp, misc_price1, misc_price2, misc_price3) VALUES (?, ?, ?, ?)
-//     `);
-//     const insertVehicleStmt = await db.prepare(`
-//         INSERT INTO vehicles (year, body, type, drivetrain, dealerCity, dealerState, fuel_type, mileage, image_url, manufacturer_id, model_id, trim_id, pricing_id)
-//         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-//     `);
-//
-//     // Use a promise to handle all the inserts
-//     const insertDataPromises = [];
-//
-//     fs.createReadStream(CSV_FILE)
-//         .pipe(csv())
-//         .on("data", async (row) => {
-//             try {
-//                 // Validate the row
-//                 if (!row.Make || !row.Model || !row.Trim || !row.MSRP) {
-//                     console.log(`Skipping row due to missing fields: ${JSON.stringify(row)}`);
-//                     return; // Skip the row if required fields are missing
-//                 }
-//
-//                 console.log(`Processing row: ${JSON.stringify(row)}`);
-//
-//                 // Insert Manufacturer
-//                 const manufacturerResult = await db.get(`
-//                 SELECT id FROM manufacturers WHERE name = ?`, [row.Make]);
-//                 let manufacturerId = manufacturerResult ? manufacturerResult.id : null;
-//                 if (!manufacturerId) {
-//                     const insertManufacturerResult = await insertManufacturerStmt.run(row.Make);
-//                     manufacturerId = insertManufacturerResult.lastID;
-//                 }
-//                 console.log(`Inserted manufacturer: ${row.Make}`);
-//
-//                 // Insert Model
-//                 const modelResult = await db.get(`
-//                 SELECT id FROM models WHERE name = ? AND manufacturer_id = ?`, [row.Model, manufacturerId]);
-//                 let modelId = modelResult ? modelResult.id : null;
-//                 if (!modelId) {
-//                     const insertModelResult = await insertModelStmt.run(row.Model, manufacturerId);
-//                     modelId = insertModelResult.lastID;
-//                 }
-//                 console.log(`Inserted model: ${row.Model}`);
-//
-//                 // Insert Trim (if applicable)
-//                 const trimResult = await db.get(`
-//                 SELECT id FROM trims WHERE name = ? AND model_id = ?`, [row.Trim, modelId]);
-//                 let trimId = trimResult ? trimResult.id : null;
-//                 if (!trimId && row.Trim) {
-//                     const insertTrimResult = await insertTrimStmt.run(row.Trim, modelId);
-//                     trimId = insertTrimResult.lastID;
-//                 }
-//                 console.log(`Inserted trim: ${row.Trim}`);
-//
-//                 // Insert Pricing
-//                 const insertPricingResult = await insertPricingStmt.run(row.MSRP, row.MiscPrice1, row.MiscPrice2, row.MiscPrice3);
-//                 const pricingId = insertPricingResult.lastID;
-//                 console.log(`Inserted pricing: ${row.MSRP}, ${row.MiscPrice1}, ${row.MiscPrice2}, ${row.MiscPrice3}`);
-//
-//                 // Insert Vehicle
-//                 insertDataPromises.push(
-//                     insertVehicleStmt.run(
-//                         row.Year, row.Body, row.Type, row.Drivetrain, row['Dealer City'], row['Dealer State'], row.Fuel_Type,
-//                         row.Miles, row.ImageList, manufacturerId, modelId, trimId, pricingId
-//                     )
-//                 );
-//                 console.log(`Inserted vehicle: ${row.Year}, ${row.Body}`);
-//
-//             } catch (err) {
-//                 console.error("Error inserting row:", err);
-//             }
-//         })
-//         .on("end", async () => {
-//             console.log("CSV file successfully processed.");
-//
-//             // Wait for all data to be inserted
-//             await Promise.all(insertDataPromises);
-//
-//             // Finalize the statements after all inserts are completed
-//             try {
-//                 console.log("Finalizing prepared statements.");
-//                 await insertManufacturerStmt.finalize();
-//                 await insertModelStmt.finalize();
-//                 await insertTrimStmt.finalize();
-//                 await insertPricingStmt.finalize();
-//                 await insertVehicleStmt.finalize();
-//             } catch (err) {
-//                 console.error("Error finalizing statements:", err);
-//             }
-//
-//             // Close the database connection
-//             await db.close();
-//         });
-//
-// }
-//
-// createDatabase().catch((err) => console.error("Database error:", err));
+import fs from "fs";
+import path from "path";
+import sqlite3 from "sqlite3";
+import { open } from "sqlite";
+import csv from "csv-parser";
+
+// Use absolute paths instead of relative paths
+const DATA_DIR = path.resolve(process.cwd(), "data");
+const DB_FILE = path.resolve(DATA_DIR, "vehicles.db");
+
+// Log paths to help debug
+console.log("Working directory:", process.cwd());
+console.log("Data directory:", DATA_DIR);
+console.log("Database file path:", DB_FILE);
+
+// Check if data directory exists, create if it doesn't
+if (!fs.existsSync(DATA_DIR)) {
+    console.log(`Creating data directory: ${DATA_DIR}`);
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+// Find all CSV files in the data directory
+const csvFiles = fs.readdirSync(DATA_DIR)
+    .filter(file => file.toLowerCase().endsWith('.csv'))
+    .map(file => path.resolve(DATA_DIR, file));
+
+if (csvFiles.length === 0) {
+    console.error(`Error: No CSV files found in ${DATA_DIR}`);
+    process.exit(1);
+}
+
+console.log(`Found ${csvFiles.length} CSV files: ${csvFiles.map(f => path.basename(f)).join(', ')}`);
+
+async function createDatabase() {
+    console.log("Opening database connection...");
+    const db = await open({
+        filename: DB_FILE,
+        driver: sqlite3.Database,
+    });
+    console.log("Database connection established.");
+
+    // Create tables
+    console.log("Creating tables...");
+    await db.exec(`
+        CREATE TABLE IF NOT EXISTS manufacturers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS models (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            manufacturer_id INTEGER,
+            FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS trims (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            model_id INTEGER,
+            FOREIGN KEY (model_id) REFERENCES models(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS pricing (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            msrp REAL,
+            misc_price1 REAL,
+            misc_price2 REAL,
+            misc_price3 REAL
+        );
+
+        CREATE TABLE IF NOT EXISTS vehicles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER,
+            body TEXT,
+            type TEXT,
+            drivetrain TEXT,
+            dealerCity TEXT,
+            dealerState TEXT,
+            fuel_type TEXT,
+            mileage INTEGER,
+            image_url TEXT,
+            manufacturer_id INTEGER,
+            model_id INTEGER,
+            trim_id INTEGER,
+            pricing_id INTEGER,
+            FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id),
+            FOREIGN KEY (model_id) REFERENCES models(id),
+            FOREIGN KEY (trim_id) REFERENCES trims(id),
+            FOREIGN KEY (pricing_id) REFERENCES pricing(id)
+        );
+    `);
+
+    console.log("Database and tables created.");
+
+    // Prepared statements for inserting records
+    console.log("Preparing SQL statements...");
+    const insertManufacturerStmt = await db.prepare(`
+        INSERT OR IGNORE INTO manufacturers (name) VALUES (?)
+    `);
+    const insertModelStmt = await db.prepare(`
+        INSERT OR IGNORE INTO models (name, manufacturer_id) VALUES (?, ?)
+    `);
+    const insertTrimStmt = await db.prepare(`
+        INSERT OR IGNORE INTO trims (name, model_id) VALUES (?, ?)
+    `);
+    const insertPricingStmt = await db.prepare(`
+        INSERT INTO pricing (msrp, misc_price1, misc_price2, misc_price3) VALUES (?, ?, ?, ?)
+    `);
+    const insertVehicleStmt = await db.prepare(`
+        INSERT INTO vehicles (year, body, type, drivetrain, dealerCity, dealerState, fuel_type, mileage, image_url, manufacturer_id, model_id, trim_id, pricing_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    // Process each CSV file
+    let totalRowsProcessed = 0;
+    let totalRowsImported = 0;
+
+    for (const csvFile of csvFiles) {
+        const fileName = path.basename(csvFile);
+        console.log(`\nProcessing file: ${fileName}`);
+
+        // Track statistics for this file
+        let fileRowsProcessed = 0;
+        let fileRowsImported = 0;
+        const fileInsertPromises = [];
+
+        // Process the CSV file
+        await new Promise((resolve, reject) => {
+            fs.createReadStream(csvFile)
+                .on('error', (err) => {
+                    console.error(`Error reading CSV file ${fileName}:`, err);
+                    reject(err);
+                })
+                .pipe(csv())
+                .on("data", async (row) => {
+                    fileRowsProcessed++;
+                    totalRowsProcessed++;
+
+                    try {
+                        // Log progress every 100 rows
+                        if (fileRowsProcessed % 100 === 0) {
+                            console.log(`${fileName}: Processed ${fileRowsProcessed} rows...`);
+                        }
+
+                        // Field naming might vary across CSV files, handle different possible names
+                        const make = row.Make || row.make || row.MAKE || row.Manufacturer || row.manufacturer;
+                        const model = row.Model || row.model || row.MODEL;
+                        const trim = row.Trim || row.trim || row.TRIM;
+                        const msrp = row.MSRP || row.msrp || row.Price || row.price || row.PRICE;
+
+                        // Validate the row - minimal requirements: make, model, and some price
+                        if (!make || !model || !msrp) {
+                            return; // Skip the row if required fields are missing
+                        }
+
+                        // Insert Manufacturer
+                        const manufacturerResult = await db.get(`
+                        SELECT id FROM manufacturers WHERE name = ?`, [make]);
+                        let manufacturerId = manufacturerResult ? manufacturerResult.id : null;
+                        if (!manufacturerId) {
+                            const insertManufacturerResult = await insertManufacturerStmt.run(make);
+                            manufacturerId = insertManufacturerResult.lastID;
+                        }
+
+                        // Insert Model
+                        const modelResult = await db.get(`
+                        SELECT id FROM models WHERE name = ? AND manufacturer_id = ?`, [model, manufacturerId]);
+                        let modelId = modelResult ? modelResult.id : null;
+                        if (!modelId) {
+                            const insertModelResult = await insertModelStmt.run(model, manufacturerId);
+                            modelId = insertModelResult.lastID;
+                        }
+
+                        // Insert Trim (if applicable)
+                        let trimId = null;
+                        if (trim) {
+                            const trimResult = await db.get(`
+                            SELECT id FROM trims WHERE name = ? AND model_id = ?`, [trim, modelId]);
+                            trimId = trimResult ? trimResult.id : null;
+                            if (!trimId) {
+                                const insertTrimResult = await insertTrimStmt.run(trim, modelId);
+                                trimId = insertTrimResult.lastID;
+                            }
+                        }
+
+                        // Extract other data fields with fallbacks for different field names
+                        const year = row.Year || row.year || row.YEAR || null;
+                        const body = row.Body || row.body || row.BODY || row.BodyType || row.bodyType || row.bodytype || null;
+                        const type = row.Type || row.type || row.TYPE || row.VehicleType || row.vehicleType || null;
+                        const drivetrain = row.Drivetrain || row.drivetrain || row.DRIVETRAIN || null;
+                        const dealerCity = row['Dealer City'] || row.DealerCity || row.dealerCity || row.City || row.city || null;
+                        const dealerState = row['Dealer State'] || row.DealerState || row.dealerState || row.State || row.state || null;
+                        const fuelType = row.Fuel_Type || row.FuelType || row.fuelType || row.fuel_type || row.FUEL_TYPE || null;
+                        const mileage = row.Miles || row.miles || row.MILES || row.Mileage || row.mileage || row.MILEAGE || null;
+                        const imageUrl = row.ImageList || row.ImageURL || row.imageURL || row.ImageUrl || row.imageUrl || row.image_url || null;
+
+                        // Handle price data
+                        const miscPrice1 = row.MiscPrice1 || row.miscPrice1 || row.OtherPrice1 || null;
+                        const miscPrice2 = row.MiscPrice2 || row.miscPrice2 || row.OtherPrice2 || null;
+                        const miscPrice3 = row.MiscPrice3 || row.miscPrice3 || row.OtherPrice3 || null;
+
+                        // Insert Pricing
+                        const insertPricingResult = await insertPricingStmt.run(
+                            msrp, miscPrice1, miscPrice2, miscPrice3
+                        );
+                        const pricingId = insertPricingResult.lastID;
+
+                        // Insert Vehicle
+                        fileInsertPromises.push(
+                            insertVehicleStmt.run(
+                                year, body, type, drivetrain, dealerCity, dealerState,
+                                fuelType, mileage, imageUrl, manufacturerId, modelId,
+                                trimId, pricingId
+                            )
+                        );
+
+                        fileRowsImported++;
+                        totalRowsImported++;
+                    } catch (err) {
+                        console.error(`Error processing row ${fileRowsProcessed} in ${fileName}:`, err);
+                    }
+                })
+                .on("end", () => {
+                    console.log(`File ${fileName} reading complete. Processed ${fileRowsProcessed} rows.`);
+                    resolve();
+                })
+                .on("error", (err) => {
+                    console.error(`Error parsing CSV ${fileName}:`, err);
+                    reject(err);
+                });
+        });
+
+        // Wait for all inserts from this file to complete
+        await Promise.all(fileInsertPromises);
+        console.log(`File ${fileName} import complete. Imported ${fileRowsImported} vehicles.`);
+    }
+
+    // Finalize the statements after all inserts are completed
+    try {
+        console.log("\nFinalizing prepared statements.");
+        await insertManufacturerStmt.finalize();
+        await insertModelStmt.finalize();
+        await insertTrimStmt.finalize();
+        await insertPricingStmt.finalize();
+        await insertVehicleStmt.finalize();
+    } catch (err) {
+        console.error("Error finalizing statements:", err);
+    }
+
+    // Create some useful indexes
+    console.log("Creating indexes...");
+    await db.exec(`
+        CREATE INDEX IF NOT EXISTS idx_vehicles_manufacturer ON vehicles(manufacturer_id);
+        CREATE INDEX IF NOT EXISTS idx_vehicles_model ON vehicles(model_id);
+        CREATE INDEX IF NOT EXISTS idx_vehicles_year ON vehicles(year);
+        CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(type);
+        CREATE INDEX IF NOT EXISTS idx_vehicles_mileage ON vehicles(mileage);
+        CREATE INDEX IF NOT EXISTS idx_vehicles_body ON vehicles(body);
+        CREATE INDEX IF NOT EXISTS idx_vehicles_drivetrain ON vehicles(drivetrain);
+    `);
+
+    // Display database statistics
+    console.log("\nDatabase Statistics:");
+    const vehicleCount = await db.get("SELECT COUNT(*) as count FROM vehicles");
+    const manufacturerCount = await db.get("SELECT COUNT(*) as count FROM manufacturers");
+    const modelCount = await db.get("SELECT COUNT(*) as count FROM models");
+    const trimCount = await db.get("SELECT COUNT(*) as count FROM trims");
+
+    console.log(`- Total vehicles imported: ${vehicleCount.count}`);
+    console.log(`- Total manufacturers: ${manufacturerCount.count}`);
+    console.log(`- Total models: ${modelCount.count}`);
+    console.log(`- Total trims: ${trimCount.count}`);
+    console.log(`- Total rows processed from CSV: ${totalRowsProcessed}`);
+    console.log(`- Total rows successfully imported: ${totalRowsImported}`);
+
+    // Close the database connection
+    console.log("\nClosing database connection...");
+    await db.close();
+    console.log("Database processing complete!");
+}
+
+createDatabase()
+    .then(() => console.log("Database import completed successfully."))
+    .catch((err) => {
+        console.error("Database error:", err);
+        process.exit(1);
+    });
+
+
+

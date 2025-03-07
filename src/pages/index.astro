@@ -3,21 +3,68 @@ import Branding from '../components/Home/Branding';
 import CarPage from '../components/Car/CarPage';
 import DefaultLayout from '../layouts/DefaultLayout.astro';
 
-const apiUrl = import.meta.env.API_URL; // Fallback to local if not deployed
-// 🚀 Fetch data server-side
-const vehicleResponse = await fetch(apiUrl + 'vehicles'); // Adjust API URL as needed
-const { vehicles, count } = await vehicleResponse.json();
-const filterResponse = await fetch(apiUrl + 'fetchVehicleFilters');  // Fetch filters
-const {initialFilters} = await filterResponse.json(); // Fetch filters
+let vehicles = [];
+let count = 0;
+let initialFilters = {};
+// Change the type initialization to allow for string | null
+let errorMessage: string | null = null;
 
-const BATCH_SIZE = 24;
+try {
+	const apiUrl = import.meta.env.API_URL || '';
+	// First, fetch vehicles
+	const vehicleResponse = await fetch(`${apiUrl}vehicles`);
+
+	if (vehicleResponse.ok) {
+		// Check content type to make sure it's JSON
+		const contentType = vehicleResponse.headers.get('content-type');
+		if (contentType && contentType.includes('application/json')) {
+			const data = await vehicleResponse.json();
+			vehicles = data.vehicles || [];
+			count = data.count || 0;
+		} else {
+			// If it's not JSON, get the text to see what was returned
+			const text = await vehicleResponse.text();
+			console.error('Received non-JSON response:', text.substring(0, 100) + '...');
+			errorMessage = 'API returned non-JSON data';
+		}
+	} else {
+		console.error('Vehicle fetch failed with status:', vehicleResponse.status);
+		errorMessage = `API responded with status: ${vehicleResponse.status}`;
+	}
+
+	// Then fetch filters in the same way
+	const filterResponse = await fetch(`${apiUrl}fetchVehicleFilters`);
+
+	if (filterResponse.ok) {
+		const contentType = filterResponse.headers.get('content-type');
+		if (contentType && contentType.includes('application/json')) {
+			initialFilters = await filterResponse.json();
+		} else {
+			const text = await filterResponse.text();
+			console.error('Received non-JSON response for filters:', text.substring(0, 100) + '...');
+		}
+	}
+} catch (error) {
+	console.error('Failed to fetch initial data:', error);
+	// Make sure error is treated as any to safely access message property
+	errorMessage = (error as any).message || 'Unknown error occurred';
+}
 ---
 
 <DefaultLayout>
 	<div>
 		<Branding logosClassName="fill-black" client:load />
-		<CarPage client:load
-				 initialData={{ vehicles, count }}
-				 initialFilters={initialFilters} />
+		{errorMessage ? (
+			<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4">
+				<strong class="font-bold">Error:</strong>
+				<span class="block sm:inline"> {errorMessage}</span>
+				<p class="mt-2">Check your API server and connection settings.</p>
+			</div>
+		) : (
+			<CarPage client:load
+					 initialData={{ vehicles, count }}
+					 initialFilters={initialFilters}
+					 apiUrl={import.meta.env.API_URL || ''} />
+		)}
 	</div>
 </DefaultLayout>

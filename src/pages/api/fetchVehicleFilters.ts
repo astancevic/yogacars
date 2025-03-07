@@ -1,3 +1,4 @@
+// src/pages/api/fetchVehicleFilters.ts
 import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import path from 'node:path';
@@ -10,37 +11,97 @@ export async function GET() {
             driver: sqlite3.Database,
         });
 
+        // Get distinct values for various filter categories
         const query = `
-            SELECT DISTINCT v.body AS bodyType, v.manufacturer_id, v.model_id, v.drivetrain, v.dealerCity, 
-                            v.fuel_type, v.mileage, v.year, p.msrp AS price
+            SELECT 
+                v.body AS bodyType, 
+                v.drivetrain, 
+                v.dealerCity, 
+                v.fuel_type, 
+                v.mileage, 
+                v.year, 
+                p.msrp AS price
             FROM vehicles v
             JOIN pricing p ON v.pricing_id = p.id
         `;
-        const result = await db.all(query);
+        const vehicleData = await db.all(query);
 
-        const modelsQuery = `SELECT DISTINCT id, name, manufacturer_id FROM models WHERE id IN (SELECT DISTINCT model_id FROM vehicles)`;
-        const makeQuery = `SELECT DISTINCT name FROM manufacturers WHERE id IN (SELECT DISTINCT manufacturer_id FROM vehicles)`;
+        // Get manufacturers (makes)
+        const makesQuery = `
+            SELECT DISTINCT m.id, m.name
+            FROM manufacturers m
+            JOIN vehicles v ON m.id = v.manufacturer_id
+            ORDER BY m.name
+        `;
+        const makes = await db.all(makesQuery);
 
+        // Get models with their parent manufacturer
+        const modelsQuery = `
+            SELECT DISTINCT mo.id, mo.name, mo.manufacturer_id as parent
+            FROM models mo
+            JOIN vehicles v ON mo.id = v.model_id
+            ORDER BY mo.name
+        `;
         const models = await db.all(modelsQuery);
-        const make = await db.all(makeQuery);
 
-        const prices = result.map((row: any) => row.price).filter(Boolean);
-        const miles = result.map((row: any) => row.mileage).filter(Boolean);
-        const years = result.map((row: any) => row.year).filter(Boolean);
+        // Extract distinct values and calculate ranges
+        const prices = vehicleData.map(row => row.price).filter(Boolean);
+        const miles = vehicleData.map(row => row.mileage).filter(Boolean);
+        const years = vehicleData.map(row => row.year).filter(Boolean);
+        const locations = [...new Set(vehicleData.map(row => row.dealerCity))].filter(Boolean);
+        const fuelTypes = [...new Set(vehicleData.map(row => row.fuel_type))].filter(Boolean);
+        const bodyTypes = [...new Set(vehicleData.map(row => row.bodyType))].filter(Boolean);
+        const drivetrains = [...new Set(vehicleData.map(row => row.drivetrain))].filter(Boolean);
 
-        return new Response(JSON.stringify({
-            make: make.map((row: any) => row.name),
-            model: models.map((row: any) => ({ name: row.name, parent: row.manufacturer_id.toString() })),
-            location: [...new Set(result.map((row: any) => row.dealerCity))].filter(Boolean),
-            fuelType: [...new Set(result.map((row: any) => row.fuel_type))].filter(Boolean),
-            bodyType: [...new Set(result.map((row: any) => row.bodyType))].filter(Boolean),
-            drivetrain: [...new Set(result.map((row: any) => row.drivetrain))].filter(Boolean),
-            price: prices.length ? { min: Math.min(...prices), max: Math.max(...prices) } : undefined,
-            miles: miles.length ? { min: Math.min(...miles), max: Math.max(...miles) } : undefined,
-            year: years.length ? { min: Math.min(...years), max: Math.max(...years) } : undefined,
-        }), { headers: { 'Content-Type': 'application/json' } });
+        // Format the filter data for the frontend
+        const filterData = {
+            // Array filters - converted to checkboxes
+            make: makes.map(make => make.name),
+            model: models.map(model => ({
+                name: model.name,
+                parent: model.parent.toString()
+            })),
+            location: locations,
+            fuelType: fuelTypes,
+            bodyType: bodyTypes.filter(type => type && type !== 'unknown'),
+            drivetrain: drivetrains,
+
+            // Range filters
+            price: prices.length ? {
+                min: Math.floor(Math.min(...prices)),
+                max: Math.ceil(Math.max(...prices))
+            } : { min: 0, max: 100000 },
+
+            miles: miles.length ? {
+                min: Math.floor(Math.min(...miles)),
+                max: Math.ceil(Math.max(...miles))
+            } : { min: 0, max: 150000 },
+
+            year: years.length ? {
+                min: Math.min(...years),
+                max: Math.max(...years)
+            } : { min: 2015, max: new Date().getFullYear() + 1 },
+
+            // Store counts for each category for analytics
+            counts: {
+                makes: makes.length,
+                models: models.length,
+                locations: locations.length,
+                bodyTypes: bodyTypes.length
+            }
+        };
+
+        return new Response(JSON.stringify(filterData), {
+            headers: { 'Content-Type': 'application/json' }
+        });
     } catch (error) {
-        console.error('Error fetching distinct filters:', error);
-        return new Response(JSON.stringify({ error: 'Internal Server Error' }), { status: 500 });
+        console.error('Error fetching vehicle filters:', error);
+        return new Response(JSON.stringify({
+            error: 'Internal Server Error',
+            message: process.env.NODE_ENV === 'development' ? error : undefined
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
