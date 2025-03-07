@@ -4,9 +4,8 @@ import CarsListBlock from './CarsListBlock';
 import { useYogaCarStore } from '@/store/yogaCarStore';
 import useDebounce from '../../lib/hooks/useDebounce.ts';
 import SideBarFilters, { type FilterState } from "@/components/Car/SideBarFilters.tsx";
-import { navigate } from "astro:transitions/client";
 import type { BaseSelectOption } from "@/components/FormControls/Dropdown.tsx";
-import { sortList } from "@/components/Car/SortAndViewSection";
+import SortAndViewSection, { sortList } from "@/components/Car/SortAndViewSection";
 
 type InitialData = {
     vehicles: APIVehicle[];
@@ -20,30 +19,15 @@ interface CarPageProps {
     urlParams?: Record<string, string>; // URL parameters passed from index.astro
 }
 
-export default function CarPage({ initialData, initialFilters, apiUrl , urlParams = {}}: CarPageProps) {
+export default function CarPage({ initialData, initialFilters, apiUrl, urlParams = {} }: CarPageProps) {
     // State for vehicle data
-
-    // Initialize searchParam from provided URL parameters
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            // If we're on the client side, get URL params from the browser
-            const params = new URLSearchParams(window.location.search);
-            setSearchParam(params);
-        } else if (urlParams && Object.keys(urlParams).length > 0) {
-            // If we're on the server side, use the provided urlParams
-            const params = new URLSearchParams();
-            Object.entries(urlParams).forEach(([key, value]) => {
-                params.set(key, value);
-            });
-            setSearchParam(params);
-        }
-    }, [urlParams]);
-
     const [vehicles, setVehicles] = useState<APIVehicle[]>(initialData.vehicles);
     const [totalCount, setTotalCount] = useState<number>(initialData.count);
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<Error | null>(null);
     const [isLoadMore, setIsLoadMore] = useState<boolean>(false);
+    const [searchParam, setSearchParam] = useState<URLSearchParams | null>(null);
+    const [showTrim, setShowTrim] = useState<boolean>(false);
 
     // Get store values and actions
     const selectedSortOption = useYogaCarStore((state) => state.selectedSortOption);
@@ -73,21 +57,48 @@ export default function CarPage({ initialData, initialFilters, apiUrl , urlParam
     const setApplyingFilter = useYogaCarStore((state) => state.setApplyingFilter);
     const handleFilterStateChangeAction = useYogaCarStore((state) => state.handleFilterStateChangeAction);
 
-    // URL search parameters
-    const [searchParam, setSearchParam] = useState<URLSearchParams | null>(null);
-
+    // Initialize searchParam from provided URL parameters
     useEffect(() => {
-        // Reset isLoadMore when vehicles update
+        if (typeof window !== 'undefined') {
+            // If we're on the client side, get URL params from the browser
+            const params = new URLSearchParams(window.location.search);
+            setSearchParam(params);
+        } else if (urlParams && Object.keys(urlParams).length > 0) {
+            // If we're on the server side, use the provided urlParams
+            const params = new URLSearchParams();
+            Object.entries(urlParams).forEach(([key, value]) => {
+                params.set(key, value);
+            });
+            setSearchParam(params);
+        }
+    }, [urlParams]);
+
+    // Reset isLoadMore when vehicles update
+    useEffect(() => {
         setIsLoadMore(false);
     }, [vehicles]);
 
-    // Initialize searchParam from URL
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const params = new URLSearchParams(window.location.search);
-            setSearchParam(params);
-        }
-    }, []);
+    // Create helper functions for checklist items
+    function createChecklistItems(items: string[] = [], selectedValues: string[] = []) {
+        if (!items || !Array.isArray(items)) return [];
+
+        return items.map(item => ({
+            value: item,
+            label: item,
+            checked: selectedValues.includes(item)
+        }));
+    }
+
+    function createModelChecklistItems(models: any[] = [], selectedValues: string[] = []) {
+        if (!models || !Array.isArray(models)) return [];
+
+        return models.map(model => ({
+            value: model.name,
+            label: model.name,
+            parent: model.parent,
+            checked: selectedValues.includes(model.name)
+        }));
+    }
 
     // Initialize filter values from initialFilters
     useEffect(() => {
@@ -120,103 +131,62 @@ export default function CarPage({ initialData, initialFilters, apiUrl , urlParam
         }
     }, [initialFilters]);
 
-    // Helper function to create checklist items
-    function createChecklistItems(items: string[] = [], selectedValues: string[] = []) {
-        if (!items || !Array.isArray(items)) return [];
-
-        return items.map(item => ({
-            value: item,
-            label: item,
-            checked: selectedValues.includes(item)
-        }));
-    }
-
-    // Helper function to create model checklist items with parent info
-    function createModelChecklistItems(models: any[] = [], selectedValues: string[] = []) {
-        if (!models || !Array.isArray(models)) return [];
-
-        return models.map(model => ({
-            value: model.name,
-            label: model.name,
-            parent: model.parent,
-            checked: selectedValues.includes(model.name)
-        }));
-    }
-
-    const fetchFilteredVehicles = async (filters: any) => {
-        if (!filters) return;
-
+    // Fetch filtered vehicles
+    const fetchFilteredVehicles = async (filterState?: FilterState) => {
         setIsLoading(true);
         try {
-            // Build query parameters
             const params = new URLSearchParams();
 
-            // Add filters
-            if (filters.where) {
-                Object.entries(filters.where).forEach(([key, value]) => {
-                    if (value === null || value === undefined) return;
+            // Helper function to add filters
+            const addFilter = (key: string, values?: string[] | { name: string, parent?: string }[]) => {
+                if (values && values.length > 0) {
+                    const processedValues = Array.isArray(values)
+                        ? values.map(v => typeof v === 'string' ? v : v.name)
+                        : values;
+                    params.append(key, processedValues.join(','));
+                }
+            };
 
-                    if (typeof value === 'object') {
-                        // Handle range filters with proper type checking
-                        if ('gte' in value && value.gte !== null && value.gte !== undefined) {
-                            params.append(`${key}_min`, String(value.gte));
-                        }
-
-                        if ('lte' in value && value.lte !== null && value.lte !== undefined) {
-                            params.append(`${key}_max`, String(value.lte));
-                        }
-
-                        if ('in' in value && Array.isArray(value.in) && value.in.length > 0) {
-                            params.append(key, value.in.join(','));
-                        }
-
-                        if ('equals' in value && value.equals !== null && value.equals !== undefined) {
-                            params.append(`${key}_equals`, String(value.equals));
-                        }
-                    } else if (value !== null && value !== undefined) {
-                        // For primitive values, convert to string
-                        params.append(key, String(value));
+            // Helper function to add range filters
+            const addRangeFilter = (prefix: string, range?: { min?: number; max?: number }) => {
+                if (range) {
+                    if (range.min !== undefined) {
+                        params.append(`min${prefix}`, range.min.toString());
                     }
-                });
-            }
-
-            // Add pagination
-            if (filters.take !== null && filters.take !== undefined) {
-                params.append('take', String(filters.take));
-            }
-
-            if (filters.skip !== null && filters.skip !== undefined) {
-                params.append('skip', String(filters.skip));
-            }
-
-            // Add ordering
-            if (filters.orderBy && Array.isArray(filters.orderBy) && filters.orderBy.length > 0) {
-                const orderBy = filters.orderBy[0];
-                if (orderBy && typeof orderBy === 'object') {
-                    for (const [key, direction] of Object.entries(orderBy)) {
-                        if (key) {
-                            params.append('orderBy', key);
-
-                            if (direction !== null && direction !== undefined) {
-                                if (typeof direction === 'object' && 'sort' in direction && direction.sort) {
-                                    params.append('direction', String(direction.sort));
-                                } else {
-                                    params.append('direction', String(direction));
-                                }
-                            }
-                            break; // Only use first ordering
-                        }
+                    if (range.max !== undefined) {
+                        params.append(`max${prefix}`, range.max.toString());
                     }
                 }
+            };
+
+            // Apply filters from filterState
+            if (filterState) {
+                // Array filters
+                addFilter('make', filterState.make);
+                addFilter('model', filterState.model);
+                addFilter('bodyType', filterState.bodyType);
+                addFilter('fuelType', filterState.fuelType);
+                addFilter('drivetrain', filterState.drivetrain);
+                addFilter('location', filterState.location);
+
+                // Range filters
+                addRangeFilter('Price', filterState.price);
+                addRangeFilter('Miles', filterState.miles);
+                addRangeFilter('Year', filterState.year);
             }
 
-            // Execute the API call
+            // Add sorting if available
+            if (selectedSortOption) {
+                params.append('orderBy', selectedSortOption.value.toLowerCase().replace(' ', '_'));
+            }
+
+            // Execute API call
             const response = await fetch(`${apiUrl}/api/vehicles?${params.toString()}`);
             if (!response.ok) throw new Error('Failed to fetch vehicles');
 
             const data = await response.json();
-            setVehicles(data.vehicles);
-            setTotalCount(data.count);
+            setVehicles(data.vehicles || []);
+            setTotalCount(data.count || 0);
             setError(null);
         } catch (err) {
             console.error('Error fetching vehicles:', err);
@@ -226,161 +196,14 @@ export default function CarPage({ initialData, initialFilters, apiUrl , urlParam
         }
     };
 
-
-    // Initialize filters from URL parameters
-    const initializeFiltersFromUrl = (params: URLSearchParams) => {
-        const newFilterState: FilterState = {};
-
-        // Parse make filter
-        if (params.has('make')) {
-            const makeValue = params.get('make');
-            if (makeValue) {
-                const makeValues = makeValue.split(',');
-                newFilterState.make = makeValues;
-                setContextMake(makeValues[0]);
-            }
-        }
-
-        // Parse model filter
-        if (params.has('model')) {
-            const modelValue = params.get('model');
-            if (modelValue) {
-                const modelValues = modelValue.split(',');
-                const models = initialFilters.model
-                    .filter((model: any) => modelValues.includes(model.name))
-                    .map((model: any) => ({
-                        name: model.name,
-                        parent: model.parent
-                    }));
-
-                newFilterState.model = models;
-                if (models.length > 0) {
-                    setContextModel(models[0].name);
-                }
-            }
-        }
-
-        // Parse body type filter
-        if (params.has('bodyType')) {
-            const bodyTypeValue = params.get('bodyType');
-            if (bodyTypeValue) {
-                const bodyTypeValues = bodyTypeValue.split(',');
-                newFilterState.bodyType = bodyTypeValues;
-                setContextBodyType(bodyTypeValues[0]);
-            }
-        }
-
-        // Parse price range
-        if (params.has('minPrice') || params.has('maxPrice')) {
-            const minPrice = params.has('minPrice') ? params.get('minPrice') : null;
-            const maxPrice = params.has('maxPrice') ? params.get('maxPrice') : null;
-
-            const min = minPrice ? Number(minPrice) : initialFilters.price?.min || 0;
-            const max = maxPrice ? Number(maxPrice) : initialFilters.price?.max || 100000;
-
-            newFilterState.price = { min, max };
-            setPriceRangeValue([min, max]);
-        }
-
-        // Parse miles range
-        if (params.has('minMiles') || params.has('maxMiles')) {
-            const minMiles = params.has('minMiles') ? params.get('minMiles') : null;
-            const maxMiles = params.has('maxMiles') ? params.get('maxMiles') : null;
-
-            const min = minMiles ? Number(minMiles) : initialFilters.miles?.min || 0;
-            const max = maxMiles ? Number(maxMiles) : initialFilters.miles?.max || 100000;
-
-            newFilterState.miles = { min, max };
-            setMilesRangeValue([min, max]);
-        }
-
-        // Parse year range
-        if (params.has('minYear') || params.has('maxYear')) {
-            const minYear = params.has('minYear') ? params.get('minYear') : null;
-            const maxYear = params.has('maxYear') ? params.get('maxYear') : null;
-
-            const min = minYear ? Number(minYear) : initialFilters.year?.min || 2015;
-            const max = maxYear ? Number(maxYear) : initialFilters.year?.max || new Date().getFullYear() + 1;
-
-            newFilterState.year = { min, max };
-            setYearRangeValue([min, max]);
-        }
-
-        // Parse other list filters
-        const listFilters = ['fuelType', 'drivetrain', 'location'];
-        listFilters.forEach(filter => {
-            if (params.has(filter)) {
-                const value = params.get(filter);
-                if (value) {
-                    newFilterState[filter] = value.split(',');
-                }
-            }
-        });
-
-        // Set the filter state in store if we have any filters
-        if (Object.keys(newFilterState).length > 0) {
-            setSelectedFiltersState(newFilterState);
-            handleFilterStateChange(newFilterState);
-        }
-
-        // Parse sorting
-        if (params.has('sort')) {
-            const sortParam = params.get('sort');
-            if (sortParam) {
-                const sortParamValue = sortParam.replace(/_/g, ' ');
-                const sortOption = sortList.find(option => option.label === sortParamValue);
-                if (sortOption) {
-                    setSelectedSortOption(sortOption);
-                }
-            }
-        }
-    };
-
-    // Effect to initialize from URL when searchParam is available
-    useEffect(() => {
-        if (searchParam && searchParam.size > 0 && initialFilters) {
-            initializeFiltersFromUrl(searchParam);
-        }
-    }, [searchParam, initialFilters]);
-
-    // Effect to fetch vehicles when filters change
-    useEffect(() => {
-        if (applyingFilter) {
-            fetchFilteredVehicles(applyingFilter);
-        }
-    }, [applyingFilter]);
-
-    // Set up filter state change handler
-    const handleFilterStateChange = useCallback(
-        useDebounce<
-            [state?: FilterState, take?: number, skip?: number, sortOption?: BaseSelectOption<string>]
-        >(async (state, take, skip, sortOption) => {
-            handleFilterStateChangeAction(
-                contextMake,
-                contextModel,
-                { ...initialFilters },
-                state,
-                take,
-                skip,
-                sortOption || selectedSortOption
-            );
-        }, 200),
-        [contextMake, contextModel, initialFilters, selectedSortOption]
-    );
-
     // Set URL parameters
     const setParam = useCallback(
         (data?: FilterState, sort?: BaseSelectOption<string>, clearAll?: boolean) => {
             if (!searchParam) return;
 
             if (clearAll) {
-                // Clear all parameters
-                searchParam.forEach((_, key) => {
-                    searchParam.delete(key);
-                });
-
-                // Navigate to root path instead of /new-vehicles-quincy-ma/
-                navigate('/');
+                // Update URL without page reload
+                window.history.replaceState({}, '', '/');
                 return;
             }
 
@@ -452,12 +275,9 @@ export default function CarPage({ initialData, initialFilters, apiUrl , urlParam
             // Build the query string
             const queryString = newParams.toString();
 
-            // Navigate to the root with query parameters instead of /carCondition-vehicles-quincy-ma/
-            if (queryString) {
-                navigate(`/?${queryString}`);
-            } else {
-                navigate('/');
-            }
+            // Update URL without page reload
+            const newUrl = queryString ? `/?${queryString}` : '/';
+            window.history.replaceState({}, '', newUrl);
 
             // Update the searchParam state
             setSearchParam(newParams);
@@ -465,8 +285,27 @@ export default function CarPage({ initialData, initialFilters, apiUrl , urlParam
         [searchParam, contextMake, contextModel, contextBodyType, initialFilters]
     );
 
-    // Handle showing trim option
-    const [showTrim, setShowTrim] = useState<boolean>(false);
+    // Set up filter state change handler
+    const handleFilterStateChange = useCallback(
+        useDebounce((state?: FilterState) => {
+            // Directly fetch vehicles with the new filter state
+            console.log('Applying filter state:', state);
+            fetchFilteredVehicles(state);
+
+            // Update store state
+            if (state) {
+                setSelectedFiltersState(state);
+            }
+        }, 300),
+        [apiUrl, selectedSortOption]
+    );
+
+    // Effect to fetch vehicles when filters change
+    useEffect(() => {
+        if (applyingFilter) {
+            fetchFilteredVehicles(applyingFilter);
+        }
+    }, [applyingFilter]);
 
     return (
         <div className="relative mb-1 grid w-full grid-flow-col grid-cols-4 items-start justify-center pb-10 pr-0 xl:grid-cols-5 2xl:grid-cols-6 4xl:m-auto 4xl:max-w-screen-4xl">
@@ -480,13 +319,22 @@ export default function CarPage({ initialData, initialFilters, apiUrl , urlParam
                     showTrim={showTrim}
                     onFilterChange={(state) => {
                         handleFilterStateChange(state);
-                        setSelectedFiltersState(state);
                         setParam(state, selectedSortOption);
                     }}
                 />
             </div>
 
-            <main className="relative col-span-6 my-3 h-full w-full rounded-3xl bg-pure-gray-400 p-4 @container lg:col-span-3 lg:mb-10 lg:p-8 xl:col-span-4 xl:mt-0 2xl:col-span-5">
+            <main className="relative col-span-6 my-3 h-full wfull w-full rounded-3xl bg-pure-gray-400 p-4 @container lg:col-span-3 lg:mb-10 lg:p-8 xl:col-span-4 xl:mt-0 2xl:col-span-5">
+                <SortAndViewSection
+                    contextMake={contextMake}
+                    contextModel={contextModel}
+                    bodyType={contextBodyType}
+                    showTrim={showTrim}
+                    handleFilterStateChange={handleFilterStateChange}
+                    isFetching={isLoading}
+                    resultCount={totalCount!}
+                    setParam={setParam}
+                />
                 <CarsListBlock
                     BATCH_SIZE={20}
                     error={error}

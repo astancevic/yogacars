@@ -1,165 +1,192 @@
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from "node:path";
-import type {FilterState} from "@/components/Car/SideBarFilters.tsx";
 
-const dbPath = path.resolve('data', 'vehicles.db');
-const db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database
-});
+export const prerender = false;
 
-export async function getVehicles() {
+export async function GET({ request }) {
     try {
-    const vehicles = await db.all(`
-    SELECT v.year, v.type, v.dealerCity, v.dealerState, v.fuel_type, v.mileage, v.image_url, v.drivetrain, m.name AS make_name, mo.name AS model_name, t.name AS trim, p.msrp AS sellingPrice
-    FROM vehicles v
-    JOIN manufacturers m ON v.manufacturer_id = m.id
-    JOIN models mo ON v.model_id = mo.id
-    JOIN trims t ON v.trim_id = t.id
-    JOIN pricing p ON v.pricing_id = p.id
-    LIMIT 30
-  `);
+        // Get the URL from the request
+        const url = new URL(request.url);
+        const params = url.searchParams;
 
-        const count = await db.get(`
-            SELECT COUNT(*) AS totalCount
-            FROM vehicles v
-        `);
+        console.log("Vehicle API received params:", Object.fromEntries(params.entries()));
 
-
-    return {vehicles, count};
-    }catch (error) {
-        console.log('Error: ', error);
-    }
-}
-
-export const fetchVehicles = async (filters: any) => {
-    let query = `SELECT vin, body, bodyType, dateInStock, invoice, sellingPrice, year, type, miles, dealerState, dealerCity, trim, heroImageUrl,
-                 (SELECT name FROM makes WHERE makes.id = vehicles.makeId) AS makeName,
-                 (SELECT name FROM models WHERE models.id = vehicles.modelId) AS modelName
-                 FROM vehicles`;
-
-    const whereClauses: string[] = [];
-    const params: Record<string, any> = {};
-
-    if (filters.where) {
-        Object.entries(filters.where).forEach(([key, value]) => {
-            whereClauses.push(`${key} = ?`);
-            params[key] = value;
+        // Initialize database connection
+        const db = await open({
+            filename: path.resolve('data', 'vehicles.db'),
+            driver: sqlite3.Database,
         });
-    }
 
-    if (whereClauses.length) {
-        query += ` WHERE ` + whereClauses.join(' AND ');
-    }
-
-    if (filters.orderBy) {
-        query += ` ORDER BY ${filters.orderBy}`;
-    }
-
-    if (filters.take) {
-        query += ` LIMIT ?`;
-        params.take = filters.take;
-    }
-
-    if (filters.skip) {
-        query += ` OFFSET ?`;
-        params.skip = filters.skip;
-    }
-
-    // Execute query asynchronously
-    const result = await db.all(query, ...Object.values(params));
-    return result;
-};
-
-export const fetchVehicleCount = async (filters: any) => {
-    let query = `SELECT COUNT(*) AS count FROM vehicles`;
-    const whereClauses: string[] = [];
-    const params: any[] = [];
-
-    if (filters && filters.where) {
-        Object.entries(filters.where).forEach(([key, value]) => {
-            whereClauses.push(`${key} = ?`);
-            params.push(value);
-        });
-    }
-
-    if (whereClauses.length) {
-        query += ` WHERE ` + whereClauses.join(' AND ');
-    }
-
-    const result = await db.get(query, ...params);
-    return result;
-};
-
-export const fetchDistinctTrims = async () => {
-    const query = `SELECT DISTINCT trim FROM vehicles`;
-    // Execute query asynchronously
-    const result = await db.all(query);
-    return result;
-};
-
-export const fetchDistinctFilters = async (): Promise<FilterState> => {
-    try {
-        // Fetch distinct values from `vehicles`, joining pricing for price
-        const query = `
-            SELECT DISTINCT v.body AS bodyType,
-                            v.manufacturer_id, 
-                            v.model_id, 
-                            v.drivetrain, 
-                            v.dealerCity, 
-                            v.fuel_type,
-                            v.mileage,
-                            v.year,
-                            p.msrp AS price
+        // Base query with all joins
+        let baseQuery = `
+            SELECT 
+                v.year, 
+                v.body AS bodyType, 
+                v.type, 
+                v.dealerCity, 
+                v.dealerState, 
+                v.fuel_type, 
+                v.mileage, 
+                v.image_url, 
+                v.drivetrain,
+                m.name AS make_name, 
+                mo.name AS model_name, 
+                t.name AS trim, 
+                p.msrp AS sellingPrice
             FROM vehicles v
+            JOIN manufacturers m ON v.manufacturer_id = m.id
+            JOIN models mo ON v.model_id = mo.id
+            JOIN trims t ON v.trim_id = t.id
             JOIN pricing p ON v.pricing_id = p.id
         `;
 
-        const result = await db.all(query);
+        // Filter and query parameter handling
+        const whereClauses: string[] = [];
+        const queryParams: any[] = [];
 
-        // Fetch distinct models
-        const modelsQuery = `
-            SELECT DISTINCT id, name, manufacturer_id 
-            FROM models
-            WHERE id IN (SELECT DISTINCT model_id FROM vehicles)
+        // Make filter
+        if (params.has('make')) {
+            const makes = params.get('make').split(',');
+            whereClauses.push(`m.name IN (${makes.map(() => '?').join(',')})`);
+            queryParams.push(...makes);
+        }
+
+        // Model filter
+        if (params.has('model')) {
+            const models = params.get('model').split(',');
+            whereClauses.push(`mo.name IN (${models.map(() => '?').join(',')})`);
+            queryParams.push(...models);
+        }
+
+        // Body Type filter
+        if (params.has('bodyType')) {
+            const bodyTypes = params.get('bodyType').split(',');
+            whereClauses.push(`v.body IN (${bodyTypes.map(() => '?').join(',')})`);
+            queryParams.push(...bodyTypes);
+        }
+        console.log("Min price:", params.get('minPrice'));
+
+        // Price Range filter
+        if (params.has('minPrice')) {
+            console.log("Min price:", params.get('minPrice'));
+            whereClauses.push('p.msrp >= ?');
+            queryParams.push(Number(params.get('minPrice')));
+        }
+        if (params.has('maxPrice')) {
+            whereClauses.push('p.msrp <= ?');
+            queryParams.push(Number(params.get('maxPrice')));
+        }
+
+        // Mileage Range filter
+        if (params.has('minMiles')) {
+            whereClauses.push('v.mileage >= ?');
+            queryParams.push(Number(params.get('minMiles')));
+        }
+        if (params.has('maxMiles')) {
+            whereClauses.push('v.mileage <= ?');
+            queryParams.push(Number(params.get('maxMiles')));
+        }
+
+        // Year Range filter
+        if (params.has('minYear')) {
+            whereClauses.push('v.year >= ?');
+            queryParams.push(Number(params.get('minYear')));
+        }
+        if (params.has('maxYear')) {
+            whereClauses.push('v.year <= ?');
+            queryParams.push(Number(params.get('maxYear')));
+        }
+
+        // Fuel Type filter
+        if (params.has('fuelType')) {
+            const fuelTypes = params.get('fuelType').split(',');
+            whereClauses.push(`v.fuel_type IN (${fuelTypes.map(() => '?').join(',')})`);
+            queryParams.push(...fuelTypes);
+        }
+
+        // Drivetrain filter
+        if (params.has('drivetrain')) {
+            const drivetrains = params.get('drivetrain').split(',');
+            whereClauses.push(`v.drivetrain IN (${drivetrains.map(() => '?').join(',')})`);
+            queryParams.push(...drivetrains);
+        }
+
+        // Location filter
+        if (params.has('location')) {
+            const locations = params.get('location').split(',');
+            whereClauses.push(`v.dealerCity IN (${locations.map(() => '?').join(',')})`);
+            queryParams.push(...locations);
+        }
+
+        // Add WHERE clause if any filters exist
+        const whereClause = whereClauses.length > 0
+            ? `WHERE ${whereClauses.join(' AND ')}`
+            : '';
+
+        // Sorting
+        let orderClause = 'ORDER BY v.year DESC';
+        if (params.has('orderBy')) {
+            const orderBy = params.get('orderBy');
+            const direction = params.has('direction') ? params.get('direction') : 'DESC';
+
+            const columnMap = {
+                'selling_price': 'p.msrp',
+                'newest': 'v.year',
+                'highest_price': 'p.msrp',
+                'lowest_price': 'p.msrp',
+                'highest_mileage': 'v.mileage',
+                'lowest_mileage': 'v.mileage'
+            };
+
+            const column = columnMap[orderBy] || 'v.year';
+            orderClause = `ORDER BY ${column} ${direction}`;
+        }
+
+        // Pagination
+        const take = params.has('take') ? parseInt(params.get('take')) : 24;
+        const skip = params.has('skip') ? parseInt(params.get('skip')) : 0;
+
+        // Construct full query for vehicles
+        const fullQuery = `${baseQuery} ${whereClause} ${orderClause} LIMIT ? OFFSET ?`;
+        queryParams.push(take, skip);
+
+        // Construct count query
+        const countQuery = `
+            SELECT COUNT(*) AS count
+            FROM vehicles v
+            JOIN manufacturers m ON v.manufacturer_id = m.id
+            JOIN models mo ON v.model_id = mo.id
+            JOIN trims t ON v.trim_id = t.id
+            JOIN pricing p ON v.pricing_id = p.id
+            ${whereClause}
         `;
 
-        // Fetch distinct manufacturers
-        const makeQuery = `
-            SELECT DISTINCT name 
-            FROM manufacturers
-            WHERE id IN (SELECT DISTINCT manufacturer_id FROM vehicles)
-        `;
+        console.log("Executing query:", fullQuery);
+        console.log("With params:", queryParams);
 
-        // Execute queries
-        const models = await db.all(modelsQuery);
-        const make = await db.all(makeQuery);
+        // Execute both queries
+        const vehicles = await db.all(fullQuery, ...queryParams);
+        const countResult = await db.get(countQuery, ...queryParams.slice(0, -2));
 
-        // Extract min and max values for price, miles, and year
-        const prices = result.map((row: any) => row.price).filter(Boolean);
-        const miles = result.map((row: any) => row.mileage).filter(Boolean);
-        const years = result.map((row: any) => row.year).filter(Boolean);
-
-        return {
-            make: make.map((row: any) => row.name), // Array of strings
-            model: models.map((row: any) => ({ name: row.name, parent: row.manufacturer_id.toString() })), // Parent as string
-            location: [...new Set(result.map((row: any) => row.dealerCity))].filter(Boolean),
-            fuelType: [...new Set(result.map((row: any) => row.fuel_type))].filter(Boolean),
-            bodyType: [...new Set(result.map((row: any) => row.bodyType))].filter(Boolean),
-            drivetrain: [...new Set(result.map((row: any) => row.drivetrain))].filter(Boolean),
-            price: prices.length
-                ? { min: Math.min(...prices), max: Math.max(...prices) }
-                : undefined,
-            miles: miles.length
-                ? { min: Math.min(...miles), max: Math.max(...miles) }
-                : undefined,
-            year: years.length
-                ? { min: Math.min(...years), max: Math.max(...years) }
-                : undefined,
-        };
+        return new Response(JSON.stringify({
+            vehicles,
+            count: countResult.count,
+            filters: {
+                appliedWhere: whereClauses,
+                appliedOrder: orderClause
+            }
+        }), {
+            headers: { 'Content-Type': 'application/json' },
+        });
     } catch (error) {
-        console.error("Error fetching distinct filters:", error);
-        throw error;
+        console.error('Error in vehicles API:', error);
+        return new Response(JSON.stringify({
+            error: 'Internal Server Error',
+            message: error.message
+        }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
-};
+}

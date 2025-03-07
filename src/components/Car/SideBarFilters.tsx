@@ -225,7 +225,6 @@ function SideBarFilters(props: SideBarFiltersProps) {
 
   return (
       <div className="z-50 w-full rounded-xl bg-white p-8 lg:rounded-none lg:bg-none lg:p-0 lg:shadow-none">
-        <ConditionFilter />
 
         {/* Price Filter */}
         {priceRange && (
