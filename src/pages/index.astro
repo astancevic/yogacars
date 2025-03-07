@@ -3,51 +3,69 @@ import Branding from '../components/Home/Branding';
 import CarPage from '../components/Car/CarPage';
 import DefaultLayout from '../layouts/DefaultLayout.astro';
 
+// Get API URL with proper base URL
+const apiUrl = import.meta.env.API_URL || 'http://localhost:4321';
+// Normalize the base URL (remove trailing slash if present)
+const baseApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+
+// Get URL parameters from the request
+const url = new URL(Astro.request.url);
+const searchParams = url.searchParams;
+
+// Get any filter parameters we need to apply on initial load
+let make = searchParams.get('make') || null;
+let model = searchParams.get('model') || null;
+let bodyType = searchParams.get('bodyType') || null;
+let minPrice = searchParams.has('minPrice') ? Number(searchParams.get('minPrice')) : null;
+let maxPrice = searchParams.has('maxPrice') ? Number(searchParams.get('maxPrice')) : null;
+
+// Build query parameters for API request
+const apiParams = new URLSearchParams();
+if (make) apiParams.append('make', make);
+if (model) apiParams.append('model', model);
+if (bodyType) apiParams.append('bodyType', bodyType);
+if (minPrice) apiParams.append('minPrice', minPrice.toString());
+if (maxPrice) apiParams.append('maxPrice', maxPrice.toString());
+
+// Fetch vehicles data with filters applied
 let vehicles = [];
 let count = 0;
+let errorMessage = null;
 let initialFilters = {};
-// Change the type initialization to allow for string | null
-let errorMessage: string | null = null;
 
 try {
-	const apiUrl = import.meta.env.API_URL || '';
-	// First, fetch vehicles
-	const vehicleResponse = await fetch(`${apiUrl}vehicles`);
+	// Fetch vehicles with any filters applied
+	const vehicleUrl = apiParams.toString()
+		? `${baseApiUrl}/api/vehicles?${apiParams.toString()}`
+		: `${baseApiUrl}/api/vehicles`;
+
+	console.log('Fetching vehicles from:', vehicleUrl);
+	const vehicleResponse = await fetch(vehicleUrl);
 
 	if (vehicleResponse.ok) {
-		// Check content type to make sure it's JSON
-		const contentType = vehicleResponse.headers.get('content-type');
-		if (contentType && contentType.includes('application/json')) {
-			const data = await vehicleResponse.json();
-			vehicles = data.vehicles || [];
-			count = data.count || 0;
-		} else {
-			// If it's not JSON, get the text to see what was returned
-			const text = await vehicleResponse.text();
-			console.error('Received non-JSON response:', text.substring(0, 100) + '...');
-			errorMessage = 'API returned non-JSON data';
-		}
+		const data = await vehicleResponse.json();
+		vehicles = data.vehicles || [];
+		count = data.count || 0;
 	} else {
-		console.error('Vehicle fetch failed with status:', vehicleResponse.status);
-		errorMessage = `API responded with status: ${vehicleResponse.status}`;
+		console.error('Failed to fetch vehicles:', vehicleResponse.status);
+		errorMessage = `API returned status ${vehicleResponse.status}`;
 	}
 
-	// Then fetch filters in the same way
-	const filterResponse = await fetch(`${apiUrl}fetchVehicleFilters`);
+	// Fetch filter options
+	const filterUrl = `${baseApiUrl}/api/fetchVehicleFilters`;
+	console.log('Fetching filters from:', filterUrl);
+	const filterResponse = await fetch(filterUrl);
 
 	if (filterResponse.ok) {
-		const contentType = filterResponse.headers.get('content-type');
-		if (contentType && contentType.includes('application/json')) {
-			initialFilters = await filterResponse.json();
-		} else {
-			const text = await filterResponse.text();
-			console.error('Received non-JSON response for filters:', text.substring(0, 100) + '...');
-		}
+		initialFilters = await filterResponse.json();
+	} else {
+		console.error('Failed to fetch filters:', filterResponse.status);
+		errorMessage = errorMessage || `Filter API returned status ${filterResponse.status}`;
 	}
+
 } catch (error) {
-	console.error('Failed to fetch initial data:', error);
-	// Make sure error is treated as any to safely access message property
-	errorMessage = (error as any).message || 'Unknown error occurred';
+	console.error('Error fetching initial data:', error);
+	errorMessage = error.message || 'Failed to fetch data';
 }
 ---
 
@@ -64,7 +82,8 @@ try {
 			<CarPage client:load
 					 initialData={{ vehicles, count }}
 					 initialFilters={initialFilters}
-					 apiUrl={import.meta.env.API_URL || ''} />
+					 apiUrl={baseApiUrl}
+					 urlParams={Object.fromEntries(searchParams)} />
 		)}
 	</div>
 </DefaultLayout>

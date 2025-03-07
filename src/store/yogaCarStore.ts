@@ -417,19 +417,16 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
   },
 
   setParamAction: (
-    searchParam,
-    maxPriceParam,
-    contextMake,
-    contextModel,
-    contextBodyType,
-    handleFilterStateChange,
-    data,
-    sort,
-    clearAll
+      searchParam,
+      maxPriceParam,
+      contextMake,
+      contextModel,
+      contextBodyType,
+      handleFilterStateChange,
+      data,
+      sort,
+      clearAll
   ) => {
-  console.log(111);
-    // searchParam.forEach((value, key) => console.log(`${key}: ${value}`));
-
     // Create an array of keys
     const keysToDelete: string[] = [];
     searchParam.forEach((value, key) => keysToDelete.push(key));
@@ -443,11 +440,11 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
         searchParam.delete(key);
       });
 
-      navigate(`/${get().carCondition}-vehicles-quincy-ma/`);
-
-      // handleFilterStateChange(undefined);
+      // Navigate to the root path instead of vehicle-specific path
+      navigate('/');
       return;
     }
+
     if (sort) {
       searchParam.set('sort', sort.label.replace(/ /g, '_'));
     }
@@ -455,6 +452,7 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
     if (contextMake !== '*' && contextMake !== undefined) {
       searchParam.set('make', contextMake);
     }
+
     if (contextModel !== '*' && contextModel !== undefined) {
       searchParam.set('model', contextModel);
     }
@@ -462,49 +460,47 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
     if (contextBodyType) {
       searchParam.set('bodyType', contextBodyType);
     }
+
     if (data && hasAnyFilterValue(data)) {
       Object.entries(data).forEach(([key, value]) => {
-        // console.log('data', key, value);
         if (key === 'price') {
           const { min, max } = value;
           min !== get().priceRange?.[0] && searchParam.set('minPrice', min);
-          // : searchParam.delete('minPrice');
           max !== get().priceRange?.[1] && searchParam.set('maxPrice', max);
-          // : searchParam.delete('maxPrice');
         } else if (key === 'miles') {
           const { min, max } = value;
           min !== get().milesRange?.[0]
-            ? searchParam.set('minMiles', min)
-            : searchParam.delete('minMiles');
+              ? searchParam.set('minMiles', min)
+              : searchParam.delete('minMiles');
           max !== get().milesRange?.[1]
-            ? searchParam.set('maxMiles', max)
-            : searchParam.delete('maxMiles');
+              ? searchParam.set('maxMiles', max)
+              : searchParam.delete('maxMiles');
         } else if (key === 'year') {
           const { min, max } = value;
           min !== get().yearRange?.[0]
-            ? searchParam.set('minYear', min)
-            : searchParam.delete('minYear');
+              ? searchParam.set('minYear', min)
+              : searchParam.delete('minYear');
           max !== get().yearRange?.[1]
-            ? searchParam.set('maxYear', max)
-            : searchParam.delete('maxYear');
+              ? searchParam.set('maxYear', max)
+              : searchParam.delete('maxYear');
         } else if (key === 'model') {
           if (value.filter((item: undefined) => item !== undefined).length > 0) {
             searchParam.set(
-              'model',
-              value.map((item: { name: any }) => item?.name!)
+                'model',
+                value.map((item: { name: any }) => item?.name!)
             );
           }
         } else if (key === 'trim') {
           if (value?.filter((item: undefined) => item !== undefined).length > 0) {
             searchParam.set(
-              'trim',
-              value.map((item: { name: any }) => item?.name!)
+                'trim',
+                value.map((item: { name: any }) => item?.name!)
             );
           }
         } else {
           const valueString = Array.isArray(value)
-            ? value.map((item) => item?.replace(/ /g, '_')).join(',')
-            : value?.replace(/ /g, '_');
+              ? value.map((item) => item?.replace(/ /g, '_')).join(',')
+              : value?.replace(/ /g, '_');
           if (valueString.length > 0) {
             searchParam.set(key, valueString);
           }
@@ -516,18 +512,11 @@ export const useYogaCarStore = create<YogaCarStore>((set, get) => ({
       stringQuery ? (stringQuery += `&${key}=${value}`) : (stringQuery = `${key}=${value}`);
     });
 
-    if (contextModel !== '*' || contextMake !== '*') {
-      stringQuery!
-        ? // ? history.pushState({}, '', `/new-vehicles-quincy-ma/?${stringQuery}`)
-          // : history.pushState({}, '', '/new-vehicles-quincy-ma/');
-          navigate(`/${get().carCondition}-vehicles-quincy-ma/?${stringQuery}`)
-        : navigate(`/${get().carCondition}-vehicles-quincy-ma/`);
+    // Navigate to the root path with query parameters
+    if (stringQuery) {
+      navigate(`/?${stringQuery}`);
     } else {
-      stringQuery!
-        ? navigate(`/${get().carCondition}-vehicles-quincy-ma/?${stringQuery}`)
-        : navigate(`/${get().carCondition}-vehicles-quincy-ma/`);
-      // history.pushState(undefined, '', `/new-vehicles-quincy-ma/?${stringQuery}`)
-      // : history.pushState({ undefined }, '', '/new-vehicles-quincy-ma/');
+      navigate('/');
     }
   },
 

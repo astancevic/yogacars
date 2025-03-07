@@ -17,10 +17,28 @@ interface CarPageProps {
     initialData: InitialData;
     initialFilters: any; // Filter options from the API
     apiUrl: string;
+    urlParams?: Record<string, string>; // URL parameters passed from index.astro
 }
 
-export default function CarPage({ initialData, initialFilters, apiUrl }: CarPageProps) {
+export default function CarPage({ initialData, initialFilters, apiUrl , urlParams = {}}: CarPageProps) {
     // State for vehicle data
+
+    // Initialize searchParam from provided URL parameters
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            // If we're on the client side, get URL params from the browser
+            const params = new URLSearchParams(window.location.search);
+            setSearchParam(params);
+        } else if (urlParams && Object.keys(urlParams).length > 0) {
+            // If we're on the server side, use the provided urlParams
+            const params = new URLSearchParams();
+            Object.entries(urlParams).forEach(([key, value]) => {
+                params.set(key, value);
+            });
+            setSearchParam(params);
+        }
+    }, [urlParams]);
+
     const [vehicles, setVehicles] = useState<APIVehicle[]>(initialData.vehicles);
     const [totalCount, setTotalCount] = useState<number>(initialData.count);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -361,7 +379,8 @@ export default function CarPage({ initialData, initialFilters, apiUrl }: CarPage
                     searchParam.delete(key);
                 });
 
-                navigate(`/${useYogaCarStore.getState().carCondition}-vehicles-quincy-ma/`);
+                // Navigate to root path instead of /new-vehicles-quincy-ma/
+                navigate('/');
                 return;
             }
 
@@ -432,13 +451,12 @@ export default function CarPage({ initialData, initialFilters, apiUrl }: CarPage
 
             // Build the query string
             const queryString = newParams.toString();
-            const carCondition = useYogaCarStore.getState().carCondition;
 
-            // Navigate to the new URL
+            // Navigate to the root with query parameters instead of /carCondition-vehicles-quincy-ma/
             if (queryString) {
-                navigate(`/${carCondition}-vehicles-quincy-ma/?${queryString}`);
+                navigate(`/?${queryString}`);
             } else {
-                navigate(`/${carCondition}-vehicles-quincy-ma/`);
+                navigate('/');
             }
 
             // Update the searchParam state
