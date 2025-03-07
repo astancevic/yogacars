@@ -6,6 +6,7 @@ import useDebounce from '../../lib/hooks/useDebounce.ts';
 import SideBarFilters, { type FilterState } from "@/components/Car/SideBarFilters.tsx";
 import type { BaseSelectOption } from "@/components/FormControls/Dropdown.tsx";
 import SortAndViewSection, { sortList } from "@/components/Car/SortAndViewSection";
+import ShowMoreButton from "@/components/Car/ShowMoreButton.tsx";
 
 type InitialData = {
     vehicles: APIVehicle[];
@@ -284,6 +285,7 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
         },
         [searchParam, contextMake, contextModel, contextBodyType, initialFilters]
     );
+    {console.log(vehicles && vehicles?.length < totalCount)}
 
     // Set up filter state change handler
     const handleFilterStateChange = useCallback(
@@ -342,6 +344,17 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
                     vehicleList={vehicles}
                     isLoadMore={isLoadMore}
                 />
+                {vehicles && vehicles?.length < totalCount! && (
+                    <ShowMoreButton
+                        handleFilterStateChange={handleFilterStateChange}
+                        vehicleList={vehicles}
+                        contextMake={contextMake}
+                        contextModel={contextModel}
+                        bodyType={contextBodyType}
+                        setIsLoadMore={setIsLoadMore}
+                        isFetching={isLoading}
+                    />
+                )}
             </main>
         </div>
     );
