@@ -45,27 +45,35 @@ export async function GET({ request }) {
         const whereClauses: string[] = [];
         const queryParams: any[] = [];
 
+        // Helper function to handle multiple value filters
+        const addMultiValueFilter = (paramName: string, columnName: string) => {
+            if (params.has(paramName)) {
+                const values = params.get(paramName)!.split(',');
+                if (values.length > 0) {
+                    const placeholders = values.map(() => '?').join(',');
+                    whereClauses.push(`${columnName} IN (${placeholders})`);
+                    queryParams.push(...values);
+                }
+            }
+        };
+
         // Make filter
-        if (params.has('make')) {
-            const makes = params.get('make').split(',');
-            whereClauses.push(`m.name IN (${makes.map(() => '?').join(',')})`);
-            queryParams.push(...makes);
-        }
+        addMultiValueFilter('make', 'm.name');
 
         // Model filter
-        if (params.has('model')) {
-            const models = params.get('model').split(',');
-            whereClauses.push(`mo.name IN (${models.map(() => '?').join(',')})`);
-            queryParams.push(...models);
-        }
+        addMultiValueFilter('model', 'mo.name');
 
         // Body Type filter
-        if (params.has('bodyType')) {
-            const bodyTypes = params.get('bodyType').split(',');
-            whereClauses.push(`v.body IN (${bodyTypes.map(() => '?').join(',')})`);
-            queryParams.push(...bodyTypes);
-        }
-        console.log("Min price:", params.get('minPrice'));
+        addMultiValueFilter('bodyType', 'v.body');
+
+        // Drivetrain filter
+        addMultiValueFilter('drivetrain', 'v.drivetrain');
+
+        // Fuel Type filter
+        addMultiValueFilter('fuelType', 'v.fuel_type');
+
+        // Location filter
+        addMultiValueFilter('location', 'v.dealerCity');
 
         // Price Range filter
         if (params.has('minPrice')) {
@@ -96,27 +104,6 @@ export async function GET({ request }) {
         if (params.has('maxYear')) {
             whereClauses.push('v.year <= ?');
             queryParams.push(Number(params.get('maxYear')));
-        }
-
-        // Fuel Type filter
-        if (params.has('fuelType')) {
-            const fuelTypes = params.get('fuelType').split(',');
-            whereClauses.push(`v.fuel_type IN (${fuelTypes.map(() => '?').join(',')})`);
-            queryParams.push(...fuelTypes);
-        }
-
-        // Drivetrain filter
-        if (params.has('drivetrain')) {
-            const drivetrains = params.get('drivetrain').split(',');
-            whereClauses.push(`v.drivetrain IN (${drivetrains.map(() => '?').join(',')})`);
-            queryParams.push(...drivetrains);
-        }
-
-        // Location filter
-        if (params.has('location')) {
-            const locations = params.get('location').split(',');
-            whereClauses.push(`v.dealerCity IN (${locations.map(() => '?').join(',')})`);
-            queryParams.push(...locations);
         }
 
         // Add WHERE clause if any filters exist

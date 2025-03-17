@@ -133,6 +133,7 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
     }, [initialFilters]);
 
     // Fetch filtered vehicles
+    // Updated fetchFilteredVehicles function for CarPage.tsx
     const fetchFilteredVehicles = async (filterState?: FilterState) => {
         setIsLoading(true);
         try {
@@ -144,6 +145,7 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
                     const processedValues = Array.isArray(values)
                         ? values.map(v => typeof v === 'string' ? v : v.name)
                         : values;
+                    // Create a comma-separated string of values for multi-selection
                     params.append(key, processedValues.join(','));
                 }
             };
@@ -162,7 +164,7 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
 
             // Apply filters from filterState
             if (filterState) {
-                // Array filters
+                // Array filters - these now support multiple selections
                 addFilter('make', filterState.make);
                 addFilter('model', filterState.model);
                 addFilter('bodyType', filterState.bodyType);
@@ -229,7 +231,7 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
                 newParams.set('bodyType', contextBodyType);
             }
 
-            // Add filter parameters
+            // Add filter parameters - supporting multiple selections
             if (data && Object.keys(data).length > 0) {
                 Object.entries(data).forEach(([key, value]) => {
                     if (key === 'price' && value) {
@@ -266,8 +268,10 @@ export default function CarPage({ initialData, initialFilters, apiUrl, urlParams
                             newParams.set('maxYear', max.toString());
                         }
                     } else if (key === 'model' && Array.isArray(value) && value.length > 0) {
+                        // Join model names with commas for multi-selection
                         newParams.set('model', value.map(item => item.name).join(','));
                     } else if (Array.isArray(value) && value.length > 0) {
+                        // Join array values with commas for multi-selection in other filters
                         newParams.set(key, value.join(','));
                     }
                 });

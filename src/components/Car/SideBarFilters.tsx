@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ChecklistFilter from '../CarLists/Filters/ChecklistFilter';
 import RangeFilter from '../CarLists/Filters/RangeFilter';
 import { useYogaCarStore } from '@/store/yogaCarStore.ts';
-import type {BaseSelectOption} from '../FormControls/Dropdown';
+import type { BaseSelectOption } from '../FormControls/Dropdown';
 import ConditionFilter from '../CarLists/Filters/ConditionFilter';
 import ModelFilter from '../CarLists/Filters/ModelFilter';
 
@@ -70,6 +70,7 @@ function SideBarFilters(props: SideBarFiltersProps) {
   const fuelTypeList = useYogaCarStore((state) => state.fuelTypeList);
   const drivetrainList = useYogaCarStore((state) => state.drivetrainList);
   const bodyTypeList = useYogaCarStore((state) => state.bodyTypeList);
+  const setModelList = useYogaCarStore((state) => state.setModelList);
 
   // Effect to initialize range filter values from selectedFiltersState
   useEffect(() => {
@@ -117,34 +118,50 @@ function SideBarFilters(props: SideBarFiltersProps) {
     }
   };
 
-  // Handle make selection
+  // Handle make selection - now supporting multiple selections
   const handleMakeSelection = (selection: string[]) => {
     const newState = { ...selectedFiltersState };
     newState.make = [...selection];
 
     // Filter models based on selected makes
-    const filterMakeModel = selection
-        .flatMap((item) => {
-          return selectedFiltersState?.model === undefined
-              ? []
-              : selectedFiltersState?.model?.filter((model) => model?.parent === item);
-        })
-        ?.filter((model) => model !== undefined);
+    if (selection.length > 0) {
+      // If makes are selected, filter models that belong to those makes
+      const filteredModels = modelList
+          ? modelList.filter(model => model.parent && selection.includes(model.parent))
+          : [];
 
-    // Update model selection or remove if none match
-    if (filterMakeModel.length > 0) {
-      newState.model = [...filterMakeModel];
+      // Check if any of the current selected models belong to the filtered makes
+      const currentFilteredModels = selectedFiltersState?.model
+          ? selectedFiltersState.model.filter(model =>
+              model.parent && selection.includes(model.parent)
+          )
+          : [];
+
+      // Update model selection to only include models for selected makes
+      if (currentFilteredModels.length > 0) {
+        newState.model = [...currentFilteredModels];
+      } else {
+        // If no current models match the selected makes, clear model selection
+        delete newState.model;
+      }
     } else {
+      // If no makes selected, clear model selection
       delete newState.model;
     }
 
     updateOnChange(newState);
   };
 
-  // Handle model selection
+  // Handle model selection - supporting multiple selections
   const handleModelSelection = (selection: { name: string; parent?: string }[]) => {
     const newState = { ...selectedFiltersState };
-    newState.model = [...selection];
+
+    if (selection.length > 0) {
+      newState.model = [...selection];
+    } else {
+      delete newState.model;
+    }
+
     updateOnChange(newState);
   };
 
@@ -165,10 +182,16 @@ function SideBarFilters(props: SideBarFiltersProps) {
     }
   };
 
-  // Handle location selection
+  // Handle location selection - supporting multiple selections
   const handleLocationSelection = (selection: string[]) => {
     const newState = { ...selectedFiltersState };
-    newState.location = [...selection];
+
+    if (selection.length > 0) {
+      newState.location = [...selection];
+    } else {
+      delete newState.location;
+    }
+
     updateOnChange(newState);
   };
 
@@ -189,24 +212,42 @@ function SideBarFilters(props: SideBarFiltersProps) {
     }
   };
 
-  // Handle fuel type selection
+  // Handle fuel type selection - supporting multiple selections
   const handleFuelTypeSelection = (selection: string[]) => {
     const newState = { ...selectedFiltersState };
-    newState.fuelType = [...selection];
+
+    if (selection.length > 0) {
+      newState.fuelType = [...selection];
+    } else {
+      delete newState.fuelType;
+    }
+
     updateOnChange(newState);
   };
 
-  // Handle body type selection
+  // Handle body type selection - supporting multiple selections
   const handleBodyTypeSelection = (selection: string[]) => {
     const newState = { ...selectedFiltersState };
-    newState.bodyType = [...selection];
+
+    if (selection.length > 0) {
+      newState.bodyType = [...selection];
+    } else {
+      delete newState.bodyType;
+    }
+
     updateOnChange(newState);
   };
 
-  // Handle drivetrain selection
+  // Handle drivetrain selection - supporting multiple selections
   const handleDrivetrainSelection = (selection: string[]) => {
     const newState = { ...selectedFiltersState };
-    newState.drivetrain = [...selection];
+
+    if (selection.length > 0) {
+      newState.drivetrain = [...selection];
+    } else {
+      delete newState.drivetrain;
+    }
+
     updateOnChange(newState);
   };
 
@@ -248,9 +289,6 @@ function SideBarFilters(props: SideBarFiltersProps) {
         {bodyTypeList && bodyTypeList.length > 0 && (
             <ChecklistFilter
                 className="border-y border-t-0 border-black/30"
-                // isExpanded={
-                //     !!props.contextBodyType || (selectedFiltersState?.bodyType?.length ?? 0) > 0
-                // }
                 title="Body Type"
                 items={bodyTypeList}
                 onChange={handleBodyTypeSelection}
@@ -294,6 +332,7 @@ function SideBarFilters(props: SideBarFiltersProps) {
                 isExpanded={shouldShowModelFilter()}
                 title="Model"
                 items={modelList}
+                setItems={setModelList}
                 onChange={handleModelSelection}
                 message="Please select a Make"
                 showItem={shouldShowModelFilter()}
