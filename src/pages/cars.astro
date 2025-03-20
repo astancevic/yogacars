@@ -1,0 +1,89 @@
+---
+import Branding from '../components/Home/Branding';
+import CarPage from '../components/Car/CarPage';
+import DefaultLayout from '../layouts/DefaultLayout.astro';
+
+// Get API URL with proper base URL
+const apiUrl = import.meta.env.API_URL || 'http://localhost:4321';
+// Normalize the base URL (remove trailing slash if present)
+const baseApiUrl = apiUrl.endsWith('/') ? apiUrl.slice(0, -1) : apiUrl;
+
+// Get URL parameters from the request
+const url = new URL(Astro.request.url);
+const searchParams = url.searchParams;
+
+// Get any filter parameters we need to apply on initial load
+let make = searchParams.get('make') || null;
+let model = searchParams.get('model') || null;
+let bodyType = searchParams.get('bodyType') || null;
+let minPrice = searchParams.has('minPrice') ? Number(searchParams.get('minPrice')) : null;
+let maxPrice = searchParams.has('maxPrice') ? Number(searchParams.get('maxPrice')) : null;
+
+// Build query parameters for API request
+const apiParams = new URLSearchParams();
+if (make) apiParams.append('make', make);
+if (model) apiParams.append('model', model);
+if (bodyType) apiParams.append('bodyType', bodyType);
+if (minPrice) apiParams.append('minPrice', minPrice.toString());
+if (maxPrice) apiParams.append('maxPrice', maxPrice.toString());
+
+// Fetch vehicles data with filters applied
+let vehicles = [];
+let count = 0;
+let errorMessage = null;
+let initialFilters = {};
+
+try {
+    // Fetch vehicles with any filters applied
+    const vehicleUrl = apiParams.toString()
+        ? `${baseApiUrl}/api/vehicles?${apiParams.toString()}`
+        : `${baseApiUrl}/api/vehicles`;
+
+    console.log('Fetching vehicles from:', vehicleUrl);
+    const vehicleResponse = await fetch(vehicleUrl);
+
+    if (vehicleResponse.ok) {
+        const data = await vehicleResponse.json();
+        vehicles = data.vehicles || [];
+        count = data.count || 0;
+    } else {
+        console.error('Failed to fetch vehicles:', vehicleResponse.status);
+        errorMessage = `API returned status ${vehicleResponse.status}`;
+    }
+
+    // Fetch filter options
+    const filterUrl = `${baseApiUrl}/api/fetchVehicleFilters`;
+    console.log('Fetching filters from:', filterUrl);
+    const filterResponse = await fetch(filterUrl);
+
+    if (filterResponse.ok) {
+        initialFilters = await filterResponse.json();
+    } else {
+        console.error('Failed to fetch filters:', filterResponse.status);
+        errorMessage = errorMessage || `Filter API returned status ${filterResponse.status}`;
+    }
+
+} catch (error) {
+    console.error('Error fetching initial data:', error);
+    errorMessage = error.message || 'Failed to fetch data';
+}
+---
+
+<DefaultLayout>
+    <div>
+        <!--<Branding logosClassName="fill-black" />-->
+        {errorMessage ? (
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative m-4">
+                    <strong class="font-bold">Error:</strong>
+                    <span class="block sm:inline"> {errorMessage}</span>
+                    <p class="mt-2">Check your API server and connection settings.</p>
+                </div>
+        ) : (
+                <CarPage client:load
+                         initialData={{ vehicles, count }}
+                         initialFilters={initialFilters}
+                         apiUrl={baseApiUrl}
+                         urlParams={Object.fromEntries(searchParams)} />
+        )}
+    </div>
+</DefaultLayout>

@@ -39,7 +39,7 @@ async function createDatabase() {
     });
     console.log("Database connection established.");
 
-    // Create tables
+    // Create tables with UNIQUE constraints to prevent duplicates
     console.log("Creating tables...");
     await db.exec(`
         CREATE TABLE IF NOT EXISTS manufacturers (
@@ -51,14 +51,16 @@ async function createDatabase() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             manufacturer_id INTEGER,
-            FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id)
+            FOREIGN KEY (manufacturer_id) REFERENCES manufacturers(id),
+            UNIQUE(name, manufacturer_id)
         );
 
         CREATE TABLE IF NOT EXISTS trims (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             model_id INTEGER,
-            FOREIGN KEY (model_id) REFERENCES models(id)
+            FOREIGN KEY (model_id) REFERENCES models(id),
+            UNIQUE(name, model_id)
         );
 
         CREATE TABLE IF NOT EXISTS pricing (
@@ -81,6 +83,7 @@ async function createDatabase() {
             mileage INTEGER,
             image_url TEXT,
             manufacturer_id INTEGER,
+            sellingPrice INTEGER,
             model_id INTEGER,
             trim_id INTEGER,
             pricing_id INTEGER,
@@ -93,7 +96,7 @@ async function createDatabase() {
 
     console.log("Database and tables created.");
 
-    // Prepared statements for inserting records
+    // Prepared statements for inserting records - all using OR IGNORE to prevent duplicates
     console.log("Preparing SQL statements...");
     const insertManufacturerStmt = await db.prepare(`
         INSERT OR IGNORE INTO manufacturers (name) VALUES (?)
@@ -108,8 +111,8 @@ async function createDatabase() {
         INSERT INTO pricing (msrp, misc_price1, misc_price2, misc_price3) VALUES (?, ?, ?, ?)
     `);
     const insertVehicleStmt = await db.prepare(`
-        INSERT INTO vehicles (year, body, type, drivetrain, dealerCity, dealerState, fuel_type, mileage, image_url, manufacturer_id, model_id, trim_id, pricing_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO vehicles (year, body, type, drivetrain, dealerCity, dealerState, fuel_type, mileage, image_url, manufacturer_id, model_id, trim_id, pricing_id, sellingPrice)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     // Process each CSV file
@@ -154,33 +157,55 @@ async function createDatabase() {
                             return; // Skip the row if required fields are missing
                         }
 
-                        // Insert Manufacturer
+                        // Insert Manufacturer if not already present
                         const manufacturerResult = await db.get(`
-                        SELECT id FROM manufacturers WHERE name = ?`, [make]);
+                            SELECT id FROM manufacturers WHERE name = ?`, [make]);
                         let manufacturerId = manufacturerResult ? manufacturerResult.id : null;
                         if (!manufacturerId) {
                             const insertManufacturerResult = await insertManufacturerStmt.run(make);
                             manufacturerId = insertManufacturerResult.lastID;
                         }
 
-                        // Insert Model
+                        // Insert Model if not already present based on model name and manufacturer_id
+                        // Using SELECT based on the UNIQUE constraint to avoid duplicates
                         const modelResult = await db.get(`
-                        SELECT id FROM models WHERE name = ? AND manufacturer_id = ?`, [model, manufacturerId]);
+                            SELECT id FROM models WHERE name = ? AND manufacturer_id = ?`, [model, manufacturerId]);
                         let modelId = modelResult ? modelResult.id : null;
+
                         if (!modelId) {
+                            // If model does not exist, insert it
                             const insertModelResult = await insertModelStmt.run(model, manufacturerId);
-                            modelId = insertModelResult.lastID;
+
+                            // Get the ID of the newly inserted model, or the existing one if it was a duplicate
+                            if (insertModelResult.lastID) {
+                                modelId = insertModelResult.lastID;
+                            } else {
+                                // If no new row was inserted due to OR IGNORE, get the existing ID
+                                const existingModel = await db.get(`
+                                    SELECT id FROM models WHERE name = ? AND manufacturer_id = ?`,
+                                    [model, manufacturerId]);
+                                modelId = existingModel ? existingModel.id : null;
+                            }
                         }
 
-                        // Insert Trim (if applicable)
+                        // Insert Trim if applicable and not already present
                         let trimId = null;
                         if (trim) {
                             const trimResult = await db.get(`
-                            SELECT id FROM trims WHERE name = ? AND model_id = ?`, [trim, modelId]);
+                                SELECT id FROM trims WHERE name = ? AND model_id = ?`, [trim, modelId]);
                             trimId = trimResult ? trimResult.id : null;
                             if (!trimId) {
                                 const insertTrimResult = await insertTrimStmt.run(trim, modelId);
-                                trimId = insertTrimResult.lastID;
+
+                                // Similar logic as model to handle OR IGNORE
+                                if (insertTrimResult.lastID) {
+                                    trimId = insertTrimResult.lastID;
+                                } else {
+                                    const existingTrim = await db.get(`
+                                        SELECT id FROM trims WHERE name = ? AND model_id = ?`,
+                                        [trim, modelId]);
+                                    trimId = existingTrim ? existingTrim.id : null;
+                                }
                             }
                         }
 
@@ -200,6 +225,8 @@ async function createDatabase() {
                         const miscPrice2 = row.MiscPrice2 || row.miscPrice2 || row.OtherPrice2 || null;
                         const miscPrice3 = row.MiscPrice3 || row.miscPrice3 || row.OtherPrice3 || null;
 
+                        const sellingPrice = row.SellingPrice;
+
                         // Insert Pricing
                         const insertPricingResult = await insertPricingStmt.run(
                             msrp, miscPrice1, miscPrice2, miscPrice3
@@ -211,7 +238,7 @@ async function createDatabase() {
                             insertVehicleStmt.run(
                                 year, body, type, drivetrain, dealerCity, dealerState,
                                 fuelType, mileage, imageUrl, manufacturerId, modelId,
-                                trimId, pricingId
+                                trimId, pricingId, sellingPrice
                             )
                         );
 
@@ -257,35 +284,73 @@ async function createDatabase() {
         CREATE INDEX IF NOT EXISTS idx_vehicles_type ON vehicles(type);
         CREATE INDEX IF NOT EXISTS idx_vehicles_mileage ON vehicles(mileage);
         CREATE INDEX IF NOT EXISTS idx_vehicles_body ON vehicles(body);
-        CREATE INDEX IF NOT EXISTS idx_vehicles_drivetrain ON vehicles(drivetrain);
     `);
 
-    // Display database statistics
-    console.log("\nDatabase Statistics:");
-    const vehicleCount = await db.get("SELECT COUNT(*) as count FROM vehicles");
-    const manufacturerCount = await db.get("SELECT COUNT(*) as count FROM manufacturers");
-    const modelCount = await db.get("SELECT COUNT(*) as count FROM models");
-    const trimCount = await db.get("SELECT COUNT(*) as count FROM trims");
+    // Function to deduplicate existing models if needed
+    async function deduplicateModels() {
+        console.log("Checking for duplicate models...");
 
-    console.log(`- Total vehicles imported: ${vehicleCount.count}`);
-    console.log(`- Total manufacturers: ${manufacturerCount.count}`);
-    console.log(`- Total models: ${modelCount.count}`);
-    console.log(`- Total trims: ${trimCount.count}`);
-    console.log(`- Total rows processed from CSV: ${totalRowsProcessed}`);
-    console.log(`- Total rows successfully imported: ${totalRowsImported}`);
+        // First, identify duplicate models (these shouldn't exist with new constraints but check anyway)
+        const duplicates = await db.all(`
+            SELECT name, manufacturer_id, COUNT(*) as count
+            FROM models
+            GROUP BY name, manufacturer_id
+            HAVING count > 1
+        `);
 
-    // Close the database connection
-    console.log("\nClosing database connection...");
-    await db.close();
-    console.log("Database processing complete!");
+        console.log(`Found ${duplicates.length} model names with duplicates`);
+
+        // For each set of duplicates, keep one and update references
+        for (const dup of duplicates) {
+            // Get all IDs for this duplicate set
+            const modelIds = await db.all(`
+                SELECT id
+                FROM models
+                WHERE name = ? AND manufacturer_id = ?
+                ORDER BY id
+            `, [dup.name, dup.manufacturer_id]);
+
+            // Keep the first ID, remove the others
+            const keepId = modelIds[0].id;
+            const removeIds = modelIds.slice(1).map(m => m.id);
+
+            console.log(`Keeping model ID ${keepId} for "${dup.name}" and removing IDs: ${removeIds.join(', ')}`);
+
+            // Update vehicle references to the duplicate models
+            for (const removeId of removeIds) {
+                await db.run(`
+                    UPDATE vehicles
+                    SET model_id = ?
+                    WHERE model_id = ?
+                `, [keepId, removeId]);
+
+                // Update trim references
+                await db.run(`
+                    UPDATE trims
+                    SET model_id = ?
+                    WHERE model_id = ?
+                `, [keepId, removeId]);
+            }
+
+            // Delete the duplicate model entries
+            await db.run(`
+                DELETE FROM models
+                WHERE id IN (${removeIds.map(() => '?').join(',')})
+            `, removeIds);
+        }
+
+        console.log("Model deduplication check complete.");
+    }
+
+    // Run the deduplication function
+    await deduplicateModels();
+
+    console.log("\nAll CSV files processed.");
+    console.log(`Total rows processed: ${totalRowsProcessed}`);
+    console.log(`Total rows imported: ${totalRowsImported}`);
 }
 
-createDatabase()
-    .then(() => console.log("Database import completed successfully."))
-    .catch((err) => {
-        console.error("Database error:", err);
-        process.exit(1);
-    });
-
-
-
+// Run the database creation and import
+createDatabase().catch((err) => {
+    console.error("Error during database creation and import:", err);
+});
