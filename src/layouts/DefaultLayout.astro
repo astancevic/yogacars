@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import DefaultLayoutComponent from './DefaultLayout';
+import  SpeedInsights  from "@vercel/speed-insights/astro"
 ---
 <!DOCTYPE html>
 <html lang="en">
@@ -10,6 +11,7 @@ import DefaultLayoutComponent from './DefaultLayout';
         <title>My Website</title>
 </head>
 <body>
+<SpeedInsights/>
 <DefaultLayoutComponent client:load>
     <slot/>
 </DefaultLayoutComponent>
