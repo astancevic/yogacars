@@ -1,4 +1,3 @@
-import { graphql, useStaticQuery } from 'gatsby';
 import React from 'react';
 import CustomerSaysCard from './CustomerSaysCard';
 
@@ -10,28 +9,9 @@ import {
   CarouselPrevious
 } from '../ui/carousel';
 
-const customerImageQuery = graphql`
-  query CustomerImage {
-    file(relativePath: { eq: "customer-image-full.png" }) {
-      childImageSharp {
-        gatsbyImageData(
-          formats: WEBP
-          placeholder: BLURRED
-          quality: 100
-          backgroundColor: "gray"
-          width: 80
-          outputPixelDensities: 1
-        )
-      }
-    }
-  }
-`;
+
 function CustomerSaysCards() {
-  const {
-    file: {
-      childImageSharp: { gatsbyImageData }
-    }
-  } = useStaticQuery(customerImageQuery);
+
 
   const popularCardsArrayData = [
     {
@@ -88,9 +68,6 @@ function CustomerSaysCards() {
               >
                 <CustomerSaysCard
                   description={item.description}
-                  name={item.name}
-                  companyName={item.companyName}
-                  image={gatsbyImageData}
                 ></CustomerSaysCard>
               </CarouselItem>
             );

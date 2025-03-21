@@ -9,7 +9,7 @@ interface CarListCardProps {
   make: string | null;
   model: string | null;
   trim: string | null;
-  invoice: number | null;
+  invoice?: number | null;
   type: string | null;
   vin: string | null;
   miles: number | null;

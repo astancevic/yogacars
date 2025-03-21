@@ -47,10 +47,9 @@ function HowItWorks() {
         </div>
       </div>
       <div className="flex items-center justify-center md:w-1/2 ">
-        {/*<GatsbyImage alt="car-img" image={gatsbyImageData} className="w-1/2 4xl:w-1/3" />*/}
+        <img src="/public/assets/images/car-how-it-works-2.png" alt="car-img" className="w-1/2 4xl:w-1/3" />
       </div>
     </div>
   );
 }
-
 export default HowItWorks;

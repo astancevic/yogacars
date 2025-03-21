@@ -1,5 +1,5 @@
 import React from 'react';
-import LineBarIcon from '/public/assets/images/svg/line-bar-icon.svg';
+import LineBarIcon from '/public/assets/images/svg/line-bar-icon.svg?url';
 
 function DifferentApproach() {
   return (
@@ -12,7 +12,7 @@ function DifferentApproach() {
           </h2>
 
 
-          <LineBarIcon className="hidden md:block" />
+          <img src={LineBarIcon} alt="icon line bar"/>
         </span>
         <p className="mx-auto mt-3 w-5/6 text-justify text-base leading-7 md:mx-0 md:text-justify md:text-xl md:leading-10 3xl:w-2/3 ">
           Our commitment to our customers continues well beyond the date of purchase. We also have a
@@ -23,7 +23,7 @@ function DifferentApproach() {
         </p>
       </div>
       <div className="flex basis-1/2 justify-center">
-        <GatsbyImage alt="car-diff" image={gatsbyImageData} />
+        <img src="/public/assets/images/car-diff.png" alt="car-diff" />
       </div>
     </div>
   );

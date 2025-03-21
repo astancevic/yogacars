@@ -1,22 +1,16 @@
 ---
 // Import components
-
 import '../styles/global.css';
 import DefaultLayout from "../layouts/DefaultLayout.astro";
 
 import HeroSection from '../components/Home/HeroSection';
-// import BodyTypeSelector from '../components/Home/BodyTypeSelector.astro';
-// import { SEO } from '@/components/SEO/SEO.astro';
-//
-// // Client directive is used for client-side hydration
-// import PopularMakes from '../components/Home/PopularMakes.astro';
-// import ProvideServices from '../components/Home/ProvideServices.astro';
+import BodyTypeSelector from '../components/Home/BodyTypeSelector';
+import PopularMakes from '../components/Home/PopularMakes';
 import HowItWorks from '@/components/Home/HowItWorks';
-// import CustomerSays from '../components/Home/CustomerSays.astro';
-// import DifferentApproach from '../components/Home/DifferentApproach.astro';
-
-// Astro doesn't need useInView from react-intersection-observer
-// We'll use Astro's own directive instead
+import Branding from '@/components/Home/Branding';
+import ProvideServices from "@/components/Home/ProvideServices";
+import CustomerSays from "@/components/Home/CustomerSays";
+import DifferentApproach from "@/components/Home/DifferentApproach";
 ---
 
 <DefaultLayout>
@@ -33,18 +27,18 @@ import HowItWorks from '@/components/Home/HowItWorks';
 			/>
 
 			<div style="grid-area: 1/1;" class="relative place-items-center">
-				<HeroSection client:load/>
+				<Branding client:visible/>
+				<HeroSection client:visible/>
 				<div class="relative lg:translate-y-[-50%] lg:p-0">
-					<!--<BodyTypeSelector />-->
+					<BodyTypeSelector client:visible/>
 				</div>
 
-				<!-- Using Astro's own client directive for lazy loading -->
 				<div class="my-10 flex flex-col gap-9">
-					<!--<PopularMakes client:visible />-->
-					<!--<ProvideServices client:visible />-->
+					<PopularMakes client:visible />
+					<ProvideServices client:visible />
 					<HowItWorks client:visible />
-					<!--<CustomerSays client:visible />-->
-					<!--<DifferentApproach client:visible />-->
+					<CustomerSays client:visible />
+					<DifferentApproach client:visible />
 				</div>
 			</div>
 		</div>
