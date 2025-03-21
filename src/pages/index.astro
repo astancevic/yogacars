@@ -11,16 +11,18 @@ import Branding from '@/components/Home/Branding';
 import ProvideServices from "@/components/Home/ProvideServices";
 import CustomerSays from "@/components/Home/CustomerSays";
 import DifferentApproach from "@/components/Home/DifferentApproach";
+import {Image} from 'astro:assets';
 ---
 
 <DefaultLayout>
 	<div class="w-full">
 		<div class="grid">
-			<img
+			<Image
 				style="grid-area: 1/1;"
 				class="h-screen"
 				src="/assets/images/bg-image-2.jpg"
 				alt="Find your Perfect vehicle!"
+				format="webp"
 				loading="eager"
 				width="1910"
 				height="1080"

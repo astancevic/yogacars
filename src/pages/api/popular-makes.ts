@@ -1,5 +1,8 @@
 import { getPopularMakes } from '@/lib/db/db';
 
+export const config = { runtime: 'edge' };
+
+
 export async function GET() {
     try {
         // Fetch vehicle makes, optionally filtering by type

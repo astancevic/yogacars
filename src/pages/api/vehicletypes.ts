@@ -1,4 +1,6 @@
 import { getVehicleTypes } from '@/lib/db/db';
+export const config = { runtime: 'edge' };
+
 
 export async function GET() {
     try {

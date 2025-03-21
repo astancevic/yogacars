@@ -2,6 +2,7 @@ import { open } from 'sqlite';
 import sqlite3 from 'sqlite3';
 import path from 'node:path';
 export const prerender = false
+export const config = { runtime: 'edge' };
 
 export async function POST({ request }) {
     try {

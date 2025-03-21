@@ -1,4 +1,5 @@
 import { getModels } from '@/lib/db/db';
+export const config = { runtime: 'edge' };
 
 // Use memory cache to store results
 const CACHE_TTL = 1000 * 60 * 5; // 5 minutes

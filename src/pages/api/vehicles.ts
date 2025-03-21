@@ -3,6 +3,7 @@ import { open } from 'sqlite';
 import path from "node:path";
 
 export const prerender = false;
+export const config = { runtime: 'edge' };
 
 export async function GET({ request }) {
     try {
