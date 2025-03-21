@@ -23,7 +23,7 @@ function DifferentApproach() {
         </p>
       </div>
       <div className="flex basis-1/2 justify-center">
-        <img src="/public/assets/images/car-diff.png" alt="car-diff" />
+        <img src="/assets/images/car-diff.png" alt="car-diff" />
       </div>
     </div>
   );
