@@ -10,14 +10,13 @@ interface BodyTypeButtonProps {
 }
 
 export default function BodyTypeSelector() {
-  // Instead of GraphQL, directly reference images from your assets folder
   const bodyTypeImages = {
-    Convertible: '/public/assets/images/Convertible.png',
-    Coupe: '/public/assets/images/Coupe.png',
-    Hatchback: '/public/assets/images/Hatchback.png',
-    SUV: '/public/assets/images/SUV.png',
-    Sedan: '/public/assets/images/Sedan.png',
-    Truck: '/public/assets/images/Truck.png',
+    Convertible: '/assets/images/Convertible.png',
+    Coupe: '/assets/images/Coupe.png',
+    Hatchback: '/assets/images/Hatchback.png',
+    SUV: '/assets/images/SUV.png',
+    Sedan: '/assets/images/Sedan.png',
+    Truck: '/assets/images/Truck.png',
   };
 
   return (

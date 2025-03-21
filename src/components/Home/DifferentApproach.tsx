@@ -1,5 +1,5 @@
 import React from 'react';
-import LineBarIcon from '/public/assets/images/svg/line-bar-icon.svg?url';
+import LineBarIcon from '/assets/images/svg/line-bar-icon.svg?url';
 
 function DifferentApproach() {
   return (

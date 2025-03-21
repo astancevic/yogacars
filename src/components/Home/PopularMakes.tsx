@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import PopularMakesCards from './PopularMakesCards';
-import LineBarIcon from "/public/assets/images/svg/line-bar-icon.svg?url";
+import LineBarIcon from "/assets/images/svg/line-bar-icon.svg?url";
 
 // Define types based on the expected data structure
 interface Vehicle {
@@ -72,7 +72,6 @@ function PopularMakes() {
 
   // Memoized list of models for the selected make
   const modelsList = useMemo(() => {
-    console.log("Makes data:", makesData.find((make) => make.name === selectedMake)?.models ?? []);
     return makesData.find((make) => make.name === selectedMake)?.models ?? [];
 
   }, [selectedMake, makesData]);
