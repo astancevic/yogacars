@@ -12,6 +12,8 @@ import ProvideServices from "@/components/Home/ProvideServices";
 import CustomerSays from "@/components/Home/CustomerSays";
 import DifferentApproach from "@/components/Home/DifferentApproach";
 import {Image} from 'astro:assets';
+import heroImage from '@/assets/images/bg-image-2.jpg';
+
 ---
 
 <DefaultLayout>
@@ -19,14 +21,17 @@ import {Image} from 'astro:assets';
 		<div class="grid">
 			<Image
 				style="grid-area: 1/1;"
-				class="h-screen"
-				src="/assets/images/bg-image-2.jpg"
+				class="h-screen object-cover"
+				src={heroImage}
 				alt="Find your Perfect vehicle!"
 				format="webp"
 				loading="eager"
 				width="1910"
 				height="1080"
+				quality={50}
+				fetchpriority="high"
 			/>
+
 
 			<div style="grid-area: 1/1;" class="relative place-items-center">
 				<Branding client:visible/>
