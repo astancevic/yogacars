@@ -1,7 +1,7 @@
 import React from 'react';
-import LineBarIcon from '/assets/images/svg/line-bar-icon.svg?url';
+import LineBarIcon from '@/assets/images/svg/line-bar-icon.svg?url';
 
-function DifferentApproach() {
+function DifferentApproach({image}) {
   return (
     <div className="mx-auto flex w-full  flex-col items-center justify-between py-2 text-left md:flex-row  md:px-10 lg:pb-12 lg:pl-10 lg:pr-20 lg:pt-8">
       <div className="basis-1/2">
@@ -23,7 +23,7 @@ function DifferentApproach() {
         </p>
       </div>
       <div className="flex basis-1/2 justify-center">
-        <img src="/assets/images/car-diff.png" alt="car-diff" />
+        <img src={image.src} alt="car-diff" />
       </div>
     </div>
   );

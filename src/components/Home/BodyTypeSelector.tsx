@@ -32,7 +32,6 @@ export default function BodyTypeSelector({bodyTypeImages}) {
 }
 
 function BodyTypeButton({ type, image, ...props }: BodyTypeButtonProps) {
-    console.log(image)
   return (
       <a
           href={`/new-${type.toLowerCase()}-quincy-ma/`}

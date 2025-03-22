@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import PopularMakesCards from './PopularMakesCards';
-import LineBarIcon from "/assets/images/svg/line-bar-icon.svg?url";
+import LineBarIcon from "@/assets/images/svg/line-bar-icon.svg?url";
 
 // Define types based on the expected data structure
 interface Vehicle {

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { NavList, MobileNavList} from "./models.tsx";
 import type { INavList } from "./models.tsx";
+import logo from "@/assets/images/svg/QuirkLogo.svg?url";
 
 export default function Navbar() {
     const [open, setOpen] = useState(false);
@@ -9,7 +10,7 @@ export default function Navbar() {
         <div className="relative mx-auto w-full">
             <nav className="mx-auto flex items-center gap-12 px-5">
                 <a href="/" aria-label="yoga-cars" className="mr-10 w-1/2 sm:w-fit lg:mr-20">
-                    <img src='/assets/images/svg/QuirkLogo.svg' alt="Yoga Cars Logo" className="h-10" />
+                    <img src={logo} alt="Yoga Cars Logo" className="h-10" />
                 </a>
                 <div className="hidden w-full items-center justify-between xl:flex">
                     <Listing NavData={NavList} sliceStart={0} sliceEnd={5} />

@@ -1,10 +1,10 @@
 import React from 'react';
 // Import SVGs correctly for React in Astro
 // Option 1: Import as URL
-import ReactLogoUrl from '/assets/images/svg/QuirkLogo.svg?url';
-import FbIconUrl from '/assets/images/svg/Facebook.svg?url';
-import InstagramIconUrl from '/assets/images/svg/Instagram.svg?url';
-import TwitterIconUrl from '/assets/images/svg/Twitter.svg?url';
+import ReactLogoUrl from '@/assets/images/svg/QuirkLogo.svg?url';
+import FbIconUrl from '@/assets/images/svg/Facebook.svg?url';
+import InstagramIconUrl from '@/assets/images/svg/Instagram.svg?url';
+import TwitterIconUrl from '@/assets/images/svg/Twitter.svg?url';
 
 // OR Option 2: If you configured SVGR in your astro.config.mjs
 // import ReactLogo from '/assets/images/svg/QuirkLogo.svg?react';

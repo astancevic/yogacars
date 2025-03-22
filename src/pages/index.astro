@@ -1,7 +1,6 @@
 ---
 import '../styles/global.css';
 import DefaultLayout from "../layouts/DefaultLayout.astro";
-import { getImage } from 'astro:assets';
 
 import HeroSection from '../components/Home/HeroSection';
 import BodyTypeSelector from '../components/Home/BodyTypeSelector';
@@ -11,34 +10,21 @@ import Branding from '@/components/Home/Branding';
 import ProvideServices from "@/components/Home/ProvideServices";
 import CustomerSays from "@/components/Home/CustomerSays";
 import DifferentApproach from "@/components/Home/DifferentApproach";
+import { getImage,Image } from 'astro:assets';
 
-// Import the hero image
 import heroImage from '@/assets/images/bg-image-2.jpg';
-
-// Import body type images
 import convertible from '@/assets/images/Convertible.png';
 import coupe from '@/assets/images/Coupe.png';
 import hatchback from '@/assets/images/Hatchback.png';
 import suv from '@/assets/images/SUV.png';
 import sedan from '@/assets/images/Sedan.png';
 import truck from '@/assets/images/Truck.png';
+import howItWorksImage from '@/assets/images/car-how-it-works-2.png';
+import carDiff from '@/assets/images/car-diff.png';
+import provideSecImage from '@/assets/images/provide-sec.png';
 
-// Create a tiny, blurred placeholder for instant loading
-const placeholderImage = await getImage({
-	src: heroImage,
-	width: 20,
-	height: 12,
-	quality: 10
-});
 
-// Optimize the hero image
-const optimizedHero = await getImage({
-	src: heroImage,
-	width: 1910,
-	height: 1080,
-	format: 'webp',
-	quality: 50
-});
+
 
 // Optimize body type images
 const bodyTypeImages = Object.fromEntries(await Promise.all(
@@ -49,44 +35,46 @@ const bodyTypeImages = Object.fromEntries(await Promise.all(
 		SUV: suv,
 		Sedan: sedan,
 		Truck: truck,
-	}).map(async ([key, src]) => [key, (await getImage({ src, width: 200, format: "webp", quality: 80 })).src])
+	}).map(async ([key, src]) => [key, (await getImage({ src, width: 200, format: "webp" })).src])
 ));
+
+const howItWorksImageOpt = await getImage({
+	src: howItWorksImage,
+	format: "webp",
+	quality: 50
+});
+const diffImage = await getImage({
+	src: carDiff,
+	format: "webp",
+	quality: 50,
+});
+const provideSecImageopt = await getImage({
+	src: provideSecImage,
+	format: "webp",
+	quality: 50,
+});
+
+
+
 ---
 
-<!-- Preload the hero image -->
-<link rel="preload" href={optimizedHero.src} as="image" type="image/webp" fetchpriority="high" />
+
 
 <DefaultLayout>
 	<div class="w-full">
-		<div class="grid relative">
-			<!-- Hero image container with fixed height -->
-			<div style="grid-area: 1/1; position: relative; height: 100vh; overflow: hidden;">
-				<!-- Blurred placeholder - limit its boundaries -->
-				<img
-					src={placeholderImage.src}
-					alt=""
-					width="20"
-					height="12"
-					style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: blur(20px); transform: scale(1.1); z-index: 1;"
-					aria-hidden="true"
-				/>
+		<div class="grid">
+			<Image
+				style="grid-area: 1/1;"
+				class="h-screen"
+				src={heroImage}
+				alt="Find your Perfect vehicle!"
+				format="webp"
+				loading="eager"
+				width="1910"
+				height="1080"
+			/>
 
-				<!-- Main optimized image - also contained within the same boundaries -->
-				<img
-					src={optimizedHero.src}
-					width="1910"
-					height="1080"
-					alt="Find your Perfect vehicle!"
-					loading="eager"
-					fetchpriority="high"
-					style="position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity 0.5s ease-in-out;"
-					class="h-full w-full object-cover"
-					onload="this.style.opacity='1'; this.previousElementSibling.style.opacity='0'"
-				/>
-			</div>
-
-			<!-- Content layer - this sits on top with a higher z-index -->
-			<div style="grid-area: 1/1; position: relative; z-index: 3;" class="relative place-items-center">
+			<div style="grid-area: 1/1;" class="relative place-items-center">
 				<Branding client:visible/>
 				<HeroSection client:visible/>
 				<div class="relative lg:translate-y-[-50%] lg:p-0">
@@ -94,27 +82,13 @@ const bodyTypeImages = Object.fromEntries(await Promise.all(
 				</div>
 
 				<div class="my-10 flex flex-col gap-9">
-					<PopularMakes client:visible />
-					<ProvideServices client:visible />
-					<HowItWorks client:visible />
+					<PopularMakes client:load />
+					<ProvideServices image={provideSecImageopt} client:visible />
+					<HowItWorks image={howItWorksImageOpt} client:visible />
 					<CustomerSays client:visible />
-					<DifferentApproach client:visible />
+					<DifferentApproach image={diffImage} client:visible />
 				</div>
 			</div>
 		</div>
 	</div>
 </DefaultLayout>
-
-<script>
-	// This ensures the blur-up effect works correctly
-	document.addEventListener('DOMContentLoaded', () => {
-		const mainImage = document.querySelector('img[fetchpriority="high"]');
-		if (mainImage && mainImage.complete) {
-			mainImage.style.opacity = '1';
-			const placeholderImage = mainImage.previousElementSibling;
-			if (placeholderImage) {
-				placeholderImage.style.opacity = '0';
-			}
-		}
-	});
-</script>

@@ -1,7 +1,7 @@
 import React from 'react';
-import WrokersIcon from '/assets/images/svg/workers-icon.svg?url';
-import FullDayServicesIcon from '/assets/images/svg/full-services-icon.svg?url';
-import FastCarsIcon from '/assets/images/svg/fast-car-icon.svg?url';
+import WrokersIcon from '@/assets/images/svg/workers-icon.svg?url';
+import FullDayServicesIcon from '@/assets/images/svg/full-services-icon.svg?url';
+import FastCarsIcon from '@/assets/images/svg/fast-car-icon.svg?url';
 
 import {
   Carousel,
@@ -30,7 +30,7 @@ const cardsData = [
   }
 ];
 
-function ProvideServices() {
+function ProvideServices({image}) {
   const [width] = useWindowSize();
 
   return (
@@ -38,7 +38,7 @@ function ProvideServices() {
         <div className="flex w-full flex-col items-start justify-between lg:flex-row 3xl:items-center">
           <img
               alt={'car-img'}
-              src="/assets/images/provide-sec.png"
+              src={image.src}
               className="mb-9 ml-5 mr-7 h-[418px] rounded-[50px] lg:mb-0 lg:h-[850px] lg:w-1/2"
           />
 

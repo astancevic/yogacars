@@ -11,15 +11,6 @@ export default defineConfig({
             config: { path: './tailwind.config.mjs' },
         }),
     ],
-    vite: {
-        resolve: {
-            alias: {
-                // This makes /assets/ work in development
-                '/assets': '/public/assets'
-            }
-        },
-
-    },
     adapter: vercel(),
     output: 'server',
 });

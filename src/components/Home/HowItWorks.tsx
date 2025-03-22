@@ -1,5 +1,5 @@
 import React from 'react';
-import LineBarIcon from '/assets/images/svg/line-bar-icon.svg?url';
+import LineBarIcon from '@/assets/images/svg/line-bar-icon.svg?url';
 
 const data = [
   {
@@ -20,7 +20,7 @@ const data = [
 ];
 
 
-function HowItWorks() {
+function HowItWorks({image}) {
   return (
     <div className="mx-auto flex w-full flex-col items-center justify-between text-justify md:flex-row md:items-center md:px-10 lg:pl-10 lg:pr-20">
       <div className="w-full pt-0 md:w-1/2 md:pt-10">
@@ -47,7 +47,7 @@ function HowItWorks() {
         </div>
       </div>
       <div className="flex items-center justify-center md:w-1/2 ">
-        <img src="/assets/images/car-how-it-works-2.png" alt="car-img" className="w-1/2 4xl:w-1/3" />
+        <img src={image.src} alt="car-img" className="w-1/2 4xl:w-1/3" />
       </div>
     </div>
   );
