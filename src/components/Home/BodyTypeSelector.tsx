@@ -6,18 +6,10 @@ type BodyType = (typeof BODY_TYPES)[number];
 
 interface BodyTypeButtonProps {
   type: BodyType;
-  imageSrc: string;
+  image: any;
 }
 
-export default function BodyTypeSelector() {
-  const bodyTypeImages = {
-    Convertible: '/assets/images/Convertible.png',
-    Coupe: '/assets/images/Coupe.png',
-    Hatchback: '/assets/images/Hatchback.png',
-    SUV: '/assets/images/SUV.png',
-    Sedan: '/assets/images/Sedan.png',
-    Truck: '/assets/images/Truck.png',
-  };
+export default function BodyTypeSelector({bodyTypeImages}) {
 
   return (
       <ScrollArea
@@ -26,10 +18,11 @@ export default function BodyTypeSelector() {
       >
         <div className="flex items-center justify-between gap-3">
           {BODY_TYPES.map((type) => (
+
               <BodyTypeButton
                   key={type}
                   type={type}
-                  imageSrc={bodyTypeImages[type]}
+                  image={bodyTypeImages[type]}
               />
           ))}
         </div>
@@ -38,14 +31,15 @@ export default function BodyTypeSelector() {
   );
 }
 
-function BodyTypeButton({ type, imageSrc, ...props }: BodyTypeButtonProps) {
+function BodyTypeButton({ type, image, ...props }: BodyTypeButtonProps) {
+    console.log(image)
   return (
       <a
           href={`/new-${type.toLowerCase()}-quincy-ma/`}
           className="group relative w-32 cursor-pointer pb-6"
       >
         <img
-            src={imageSrc}
+            src={image}
             alt={`${type} car`}
             className="z-50 w-full"
             loading="lazy"

@@ -1,5 +1,4 @@
 ---
-// Import components
 import '../styles/global.css';
 import DefaultLayout from "../layouts/DefaultLayout.astro";
 
@@ -11,33 +10,50 @@ import Branding from '@/components/Home/Branding';
 import ProvideServices from "@/components/Home/ProvideServices";
 import CustomerSays from "@/components/Home/CustomerSays";
 import DifferentApproach from "@/components/Home/DifferentApproach";
-import {Image} from 'astro:assets';
-import heroImage from '@/assets/images/bg-image-2.jpg';
+import { getImage, Image } from 'astro:assets';
 
+import heroImage from '@/assets/images/bg-image-2.jpg';
+import convertible from '@/assets/images/Convertible.png';
+import coupe from '@/assets/images/Coupe.png';
+import hatchback from '@/assets/images/Hatchback.png';
+import suv from '@/assets/images/SUV.png';
+import sedan from '@/assets/images/Sedan.png';
+import truck from '@/assets/images/Truck.png';
+
+
+// Optimize images using Promise.all to handle multiple async calls
+const bodyTypeImages = Object.fromEntries(await Promise.all(
+	Object.entries({
+		Convertible: convertible,
+		Coupe: coupe,
+		Hatchback: hatchback,
+		SUV: suv,
+		Sedan: sedan,
+		Truck: truck,
+	}).map(async ([key, src]) => [key, (await getImage({ src, width: 800, format: "webp" })).src])
+));
 ---
 
 <DefaultLayout>
 	<div class="w-full">
 		<div class="grid">
+			<!-- Optimized image using getImage() -->
 			<Image
 				style="grid-area: 1/1;"
 				class="h-screen object-cover"
 				src={heroImage}
 				alt="Find your Perfect vehicle!"
-				format="webp"
 				loading="eager"
 				width="1910"
 				height="1080"
 				quality={50}
-				fetchpriority="high"
 			/>
-
 
 			<div style="grid-area: 1/1;" class="relative place-items-center">
 				<Branding client:visible/>
 				<HeroSection client:visible/>
 				<div class="relative lg:translate-y-[-50%] lg:p-0">
-					<BodyTypeSelector client:visible/>
+					<BodyTypeSelector bodyTypeImages={bodyTypeImages} client:visible/>
 				</div>
 
 				<div class="my-10 flex flex-col gap-9">

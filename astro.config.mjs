@@ -17,7 +17,8 @@ export default defineConfig({
                 // This makes /assets/ work in development
                 '/assets': '/public/assets'
             }
-        }
+        },
+
     },
     adapter: vercel(),
     output: 'server',
